@@ -176,7 +176,7 @@
       start: zeit, phase: 'titel', wartet: 0, sitPunkte: [], fehlalarmZeit: -9, abbruch: false };
     D.BEREICHE.forEach(b => { F.bereiche[b] = { ist: 0, max: 0 }; });
     kopfWert = kopfZiel = 0;
-    W.doppel = 0; W.zeigeDoppel = true; W.fuss = 0; W.ruck = 0; W.blitz = 0; W.rand = []; W.randAb = 1; W.kreis = null;
+    W.doppel = 0; W.dbWarn = 0; W.zeigeDoppel = true; W.fuss = 0; W.ruck = 0; W.blitz = 0; W.rand = []; W.randAb = 1; W.kreis = null;
     merken(F.liste);
   }
 
@@ -318,7 +318,7 @@
     if (alle && !reihe && ohneL.length > 1) fehler('reihenfolge', 'Reihenfolge ' + h.schritte.filter(s => s !== 'lenken').map(s => NAMEN[s]).join(' – '));
     if (h.uebernommen) return;
     if (alle) UI.fahrlehrer('freut', reihe ? spruch('lob') : HW('H009'), 2.2);
-    else UI.fahrlehrer('neutral', spruch('handgriff') || HW('H010'), 2.4);
+    else UI.fahrlehrer('neutral', spruch('handgriff') || HW('H010'), 2.4, 'halb');
   }
   function lenken(seite) {
     const h = R && R.hand;
@@ -541,7 +541,7 @@
     F.abzug += D.PUNKTE.fehlalarm;
     const b = F.bereiche[D.ZUORDNUNG.fehlalarm]; if (b) b.max += -D.PUNKTE.fehlalarm;
     UI.popup(String(D.PUNKTE.fehlalarm), x, y, 'schlecht', RAHMEN_TEXTE.rueck('FEHLALARM'));
-    if (zeit - F.fehlalarmZeit > 8) { fehler('fehlalarm', 'Fehlalarm'); UI.fahrlehrer('neutral', spruch('fehlalarm'), 2); }
+    if (zeit - F.fehlalarmZeit > 8) { fehler('fehlalarm', 'Fehlalarm'); UI.fahrlehrer('neutral', spruch('fehlalarm'), 2, 'schlecht'); }
     F.fehlalarmZeit = zeit;
     KL().ton('fehlalarm');
     anzeigen();
@@ -578,7 +578,7 @@
     vergeben('erkannt', Math.round(p), [(box[0] + box[2]) / 2, Math.max(80, box[1])], rt > 1.6 ? RAHMEN_TEXTE.rueck('ZU_SPAET') : RAHMEN_TEXTE.rueck('ERKANNT'));
     if (rt > 1.6) fehler('spaet', 'Spät reagiert');
     KL().ton(rt > 1.6 ? 'fehlalarm' : 'erkannt', rt > 1.6 ? { faktor: 0.8 } : null);
-    UI.fahrlehrer(rt < 1.2 ? 'freut' : 'nickt', rt < 1.2 ? spruch('lob') : HW('H011'), 2);
+    UI.fahrlehrer(rt < 1.2 ? 'freut' : 'nickt', rt < 1.2 ? spruch('lob') : HW('H011'), rt < 1.2 ? 2 : 2.4, rt < 1.2 ? '' : 'halb');
     g.nachErkannt && g.nachErkannt();
     anzeigen();
   }
@@ -587,8 +587,17 @@
     KL().ton('fehlalarm', { faktor: 0.8 });
     vergeben('erkannt', 0);
     fehler('verpasst', R.def.fehlertext || 'Gefahr übersehen');
-    UI.fahrlehrer('skeptisch', g.verpasstText || HW('H012'), 2.4);
+    UI.fahrlehrer('skeptisch', g.verpasstText || HW('H012'), 2.4, 'schlecht');
     g.nachVerpasst && g.nachVerpasst();
+  }
+  const DB_WARN_RUECKFALL = 'Noch eine Doppelbremse, dann ist für heute Schluss.';
+  let dbWarnLetzte = -1;
+  function dbWarnung() {
+    const l = [1, 2, 3].map(n => RT('DB_WARNUNG_' + n)).filter(Boolean);
+    if (!l.length) return DB_WARN_RUECKFALL;
+    let i = Math.floor(zufall() * l.length);
+    if (l.length > 1 && i === dbWarnLetzte) i = (i + 1) % l.length;
+    dbWarnLetzte = i; return l[i];
   }
   function doppelbremse(text) {
     F.doppel++; W.doppel = F.doppel; F.abzug += D.PUNKTE.doppelbremse; R.doppelHier = true;
@@ -598,8 +607,12 @@
     R_.vibrieren && R_.vibrieren([60, 40, 90]);
     UI.popup(String(D.PUNKTE.doppelbremse), L.B / 2, L.armaturen - 40, 'schlecht', 'Doppelbremse');
     const letzte = F.doppel >= D.PUNKTE.abbruchBei;
-    UI.fahrlehrer('erschrickt', letzte ? spruch('abbruch') : spruch('doppelbremse'), letzte ? 3 : 2.6);
+    // Kleine Runde 29.10.2026 (MZ): nach der vorletzten Doppelbremse kurzer Spruch, direkt danach ruhige Warnung (DB_WARNUNG_1…3, ca. 3,2s),
+    // Zähler leuchtet kurz auf (W.dbWarn, szene.js doppelAnzeige). Mechanik unverändert.
+    const warnen = !letzte && F.doppel === D.PUNKTE.abbruchBei - 1;
+    UI.fahrlehrer('erschrickt', letzte ? spruch('abbruch') : spruch('doppelbremse'), letzte ? 3 : warnen ? 2 : 2.6);
     if (letzte) setTimeout(() => UI.fahrlehrer('seufzt', '', 0), 1400);
+    if (warnen) { const f = F; setTimeout(() => { if (F !== f || F.phase === 'fertig' || F.abbruch) return; W.dbWarn = 3.2; UI.fahrlehrer('neutral', dbWarnung(), 3.2, 'warn'); }, 2050); }
     anzeigen();
     if (letzte) { F.phase = 'fertig'; F.abbruch = true; setTimeout(() => fahrtEnde(true), 2200); }
   }
@@ -824,7 +837,7 @@
       const ziel = ueber <= p.toleranz ? p.ziel : ueber <= p.halbBis ? p.ziel / 2 : 0;
       vergeben('tempoZiel', ziel, mitteOben());
       vergeben('tempoSanft', T.minV >= T.limit - 12 || T.minV >= T.limit * 0.6 ? p.sanft : 0);
-      if (ziel < p.ziel) { fehler('tempo', R.def.fehlertext || 'Zu schnell'); UI.fahrlehrer(ueber > p.halbBis ? 'erschrickt' : 'skeptisch', T.text || HW('H013'), 2.6); }
+      if (ziel < p.ziel) { fehler('tempo', R.def.fehlertext || 'Zu schnell'); UI.fahrlehrer(ueber > p.halbBis ? 'erschrickt' : 'skeptisch', T.text || HW('H013'), 2.6, 'schlecht'); }
       else UI.fahrlehrer('freut', spruch('lob'), 2);
       W.zielV = kmhZiel(T.danach);
       T.nach && T.nach();
@@ -990,7 +1003,7 @@
       F = { einf: true, liste: [], idx: 0, kartenNeu: [], punkte: 0, abzug: 0, doppel: 0, rts: [], bereiche: {}, fehler: [], karten: [], schulterOk: 0, schulterAlle: 0,
         start: zeit, phase: 'situation', wartet: 0, sitPunkte: [], fehlalarmZeit: -9, abbruch: false };
       D.BEREICHE.forEach(b => { F.bereiche[b] = { ist: 0, max: 0 }; });
-      W.doppel = 0; W.zeigeDoppel = true; W.fuss = 0; W.ruck = 0; W.blitz = 0; W.rand = []; W.randAb = 1; W.kreis = null;
+      W.doppel = 0; W.dbWarn = 0; W.zeigeDoppel = true; W.fuss = 0; W.ruck = 0; W.blitz = 0; W.rand = []; W.randAb = 1; W.kreis = null;
       const def = { id: 'EINF', vorlage: 'einfuehrung', p: { umgebung: 'stadt', kmh: 50 }, gebiet: 'innenstadt', stufe: 1, titel: '', bereich: 'Verkehrsbeobachtung', schritte: [], richtung: 'links' };
       F.liste = [def];
       this.nr = -1; this.fehlalarmGesagt = false; this.hilfe = undefined; this.stand = false; this.ball = null;
@@ -1194,6 +1207,7 @@ ${W.einfach ? 'einfach' : 'normal'}`);
       F.vVorher = W.v;
     }
     W.spiegel.innen += dt; W.spiegel.links += dt; W.spiegel.rechts += dt;
+    W.dbWarn = Math.max(0, (W.dbWarn || 0) - dt);
     W.fuss = Math.max(0, W.fuss - dt / 1.6); W.ruck = Math.max(0, W.ruck - dt / 0.5); W.blitz = Math.max(0, W.blitz - dt / 0.6);
     if (F.phase === 'kreuzung') return;
     if (R && (F.phase === 'situation' || F.phase === 'fertig')) situationSchritt(dt);

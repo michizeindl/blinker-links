@@ -199,6 +199,15 @@ span.bl-schalter { cursor: default; }
 }
 .bl-sb::after { content: ""; position: absolute; right: -7px; top: 14px; border: 7px solid transparent; border-right: 0; border-left-color: #fff; }
 .bl-sb.an { opacity: 1; transform: none; }
+/* Kleine Runde 29.10.2026 (Spielertest: Blase „Gesehen – aber etwas spät“ wirkte blass – Foto direkt nach dem Antippen, mitten im
+   Einblenden): Blase steht sofort deckend da, nur die Größe federt kurz; Ausblenden kurz. Ton der Rückmeldung als Streifen links. */
+.bl-sb { transition: opacity .16s ease, transform .25s ease; }
+.bl-sb.an { transition: opacity 0s, transform .28s cubic-bezier(.2, 1.35, .4, 1); }
+.bl-sb.halb, .bl-sb.schlecht, .bl-sb.warn { padding-left: 15px; }
+.bl-sb.halb { box-shadow: inset 4px 0 0 #e0a100, 0 3px 10px rgba(0,0,0,.25); }
+.bl-sb.schlecht { box-shadow: inset 4px 0 0 #e0451f, 0 3px 10px rgba(0,0,0,.25); }
+.bl-sb.warn { box-shadow: inset 4px 0 0 #e0451f, 0 3px 10px rgba(0,0,0,.25); font-weight: 600; }
+html.ruhig .bl-sb, html.ruhig .bl-sb.an { transform: none; }
 .bl-hinweis {
   position: absolute; left: 50%; transform: translateX(-50%); top: calc(var(--bl-armaturen, 480px) - 118px); white-space: nowrap;
   background: rgba(14,16,18,.84); color: #e4e9e6; font: 500 13px 'Kanit', sans-serif; padding: 5px 10px; border-radius: 999px; display: flex; gap: 5px; align-items: center;
@@ -213,9 +222,9 @@ span.bl-schalter { cursor: default; }
 .bl-popups { position: fixed; inset: 0; pointer-events: none; z-index: 6; }
 .bl-popup { position: absolute; transform: translate(-50%, -50%); text-align: center; animation: aufsteigen 1.5s ease-out forwards; white-space: nowrap; }
 .bl-popup b { display: block; font: italic 800 26px/1 'Kanit', sans-serif; text-shadow: 0 2px 4px rgba(0,0,0,.6); }
-.bl-popup span { display: inline-block; margin-top: 3px; font: 600 12px 'Kanit', sans-serif; padding: 2px 8px; border-radius: 999px; background: rgba(16,18,20,.7); color: #fff; }
+.bl-popup span { display: inline-block; margin-top: 3px; font: 600 12px 'Kanit', sans-serif; padding: 2px 8px; border-radius: 999px; background: rgba(16,18,20,.88); color: #fff; }
 .bl-popup.gut b { color: #8ff0ae; } .bl-popup.mittel b { color: #ffd014; } .bl-popup.schlecht b { color: #ff8a6a; }
-@keyframes aufsteigen { 0% { opacity: 0; transform: translate(-50%, -30%) scale(.8); } 15% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -110%); } }
+@keyframes aufsteigen { 0% { opacity: 0; transform: translate(-50%, -30%) scale(.8); } 6% { opacity: 1; } 15% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -110%); } }
 /* #fps (29.10.2026): klein oben links unter dem Haus-Knopf, nur mit dieser Adresse sichtbar */
 .bl-fps { position: fixed; left: max(6px, env(safe-area-inset-left, 0px)); top: calc(env(safe-area-inset-top, 0px) + 60px); z-index: 30; font: 500 10.5px/1.25 'Kanit', sans-serif; color: #fff; background: rgba(0,0,0,.55); padding: 2px 6px; border-radius: 5px; pointer-events: none; font-variant-numeric: tabular-nums; white-space: pre; }
 .bl-fps[hidden] { display: none; }

@@ -242,6 +242,17 @@ html.intro-logo-weiss .schild { filter: drop-shadow(0 0 1.2px rgba(255,255,255,.
   .oben { padding-bottom: 10px; }
   .fuss { padding-top: 6px; }
 }
+/* Kleine Runde 29.10.2026 (Spielertest 320 × 640: Fußzeile abgeschnitten): Hochformate bis 700 px Höhe (320 × 640, 375 × 667) etwas
+   dichter – kleinerer Tacho, engere Abstände, Fußzeile enger gesetzt; die Scheibe nimmt weiter den freien Rest */
+@media (orientation: portrait) and (max-height: 700px) {
+  :root { --t: clamp(140px, min(50vw, 23vh), 190px); }
+  .kopf { height: 46px; }
+  .oben { padding-bottom: 8px; }
+  .scheibe-rahmen { flex-basis: 56px; min-height: 52px; }
+  .leuchten { margin-top: 7px; }
+  .start { margin: 8px 0 6px; }
+  .fuss { padding-top: 4px; padding-bottom: max(6px, env(safe-area-inset-bottom, 0px)); line-height: 1.45; }
+}
 /* Bewegung reduzieren (start.js setzt html.ruhig auch bei prefers-reduced-motion): nur weiche Einblendungen, kein Hereingleiten */
 html.ruhig .kopf, html.ruhig .titelzeile, html.ruhig .kombi, html.ruhig .leuchte, html.ruhig .start { animation-name: einblenden !important; }
 html.ruhig .start > span { animation: startGlimmen 2.6s ease-in-out infinite !important; }   /* Bewegung reduzieren: nur Aufleuchten, keine Vibration */

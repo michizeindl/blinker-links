@@ -57,7 +57,9 @@
     L.kombi = { cx: B / 2, cy: Math.min(L.armaturen + kr * 1.25 + 8, cyAlt - R - kr * 0.2), r: kr };
     // Spielertest 29.10.2026: quer verdeckte der Lenkradkranz den unteren Teil des Tachos – Lenkrad so weit absenken, dass der Kranz
     // unter dem Kombi beginnt (nur wenn nötig, d. h. bei flachen Querformaten)
-    if (quer) L.lenkrad.cy = Math.max(L.lenkrad.cy, L.kombi.cy + kr + 4 + R);
+    // Kleine Runde 29.10.2026 (Spielertest quer: „km/h“ vom Lenkrad verdeckt): Oberkante des Lenkrad-Bildes liegt 1,144 R über der Mitte
+    // (Bild ragt über den Kranz hinaus) – Lenkrad so tief, dass die Einheit unter der Tachozahl frei bleibt
+    if (quer) L.lenkrad.cy = Math.max(L.lenkrad.cy, L.kombi.cy + kr + 4 + R, L.kombi.cy + kr * 0.78 + 7 + R * 1.144);
     // Blinkerhebel links, Bremse rechts (jeweils neben dem Lenkrad, gut mit dem Daumen erreichbar)
     const bw = quer ? 104 : Math.min(108, B * 0.29), bh = 46;
     const ky = quer ? L.armaturen + (H - L.armaturen) * 0.38 : L.armaturen + (H - L.armaturen) * 0.3;
@@ -574,6 +576,28 @@
     if (o.typ === 'reh' || o.typ === 'hund' || o.typ === 'wildschwein' || o.typ === 'pferd') return 'tiere/' + (o.typ === 'pferd' ? 'reiterin' : o.typ);
     return null;
   }
+  // Kleine Runde 29.10.2026: Kontrast für ferne Verkehrsteilnehmer. Stärke wächst ab 16 m und ist ab 38 m voll.
+  // Hinter dem Körper liegen zwei Schattenrisse (je Bild einmal erzeugt, höchstens 96 px, ohne Weichzeichner – shadowBlur kostete
+  // im Test bis zu 60 % Bildrate): dunkel und ringsum etwas größer (Saum), hell und etwas nach oben versetzt (Lichtkante von oben).
+  // So hebt er sich vor hellem (Himmel, Nebel) wie vor dunklem Grund (Asphalt, Wald, Nacht) ab. Einfache Darstellung: nur der Saum.
+  function fernStaerke(z) { return W.fernAlt ? 0 : klemm((z - 16) / 22, 0, 1); }
+  const SCHATTENRISS = new WeakMap();
+  function schattenriss(img) {
+    let r = SCHATTENRISS.get(img); if (r) return r;
+    const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height, sk = Math.min(1, 96 / Math.max(iw, ih));
+    const w = Math.max(1, Math.round(iw * sk)), h = Math.max(1, Math.round(ih * sk));
+    const machen = farbe => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.drawImage(img, 0, 0, w, h); x.globalCompositeOperation = 'source-in'; x.fillStyle = farbe; x.fillRect(0, 0, w, h); return c; };
+    r = { dunkel: machen('#0b0d0f'), hell: machen('#fffdf6') }; SCHATTENRISS.set(img, r); return r;
+  }
+  function fernKante(img, st, x0, y0, w, h) {
+    if (st <= 0 || w > 170 || h > 170) return;
+    const r = schattenriss(img), ga = g.globalAlpha, e = 0.8 + 0.6 * st, nebel = W.wetter === 'nebel', nacht = dunkelHier();
+    // Saum in zwei Stufen (außen schwächer) – wirkt weich statt wie ein aufgeklebter Rand
+    g.globalAlpha = ga * (nebel ? 0.28 : 0.2) * st;
+    for (const f of [1, 0.5]) g.drawImage(r.dunkel, x0 - e * f, y0 - e * f * 0.4, w + 2 * e * f, h + e * f * 1.4);
+    if (!W.einfach) { g.globalAlpha = ga * (nacht ? 0.35 : nebel ? 0.4 : 0.65) * st; g.drawImage(r.hell, x0, y0 - e, w, h); }
+    g.globalAlpha = ga;
+  }
   function bildKoerper(o, z) {
     if (!BI.waehle || z < 1) return false;
     const k = bildSchluessel(o); if (!k) return false;
@@ -590,7 +614,13 @@
     // Letzte Runde 29.10.2026 (Spielertest: ferne Personen/Radler/Tiere schwer zu entdecken): in der Ferne etwas Mindestgröße
     // (höchstens +35 %) und ein weicher dunkler Saum für mehr Kontrast – ohne Markierung, die die Gefahr verrät
     const fernZiel = /^(menschen|tiere)\//.test(k) && z > 18;
-    if (fernZiel && ms.h) { const min = Math.min(h * 1.35, 12 * (ms.h / 1.8)); if (h < min) { w *= min / h; h = min; } }
+    // Kleine Runde 29.10.2026 (Spielertest: Vorzeichen in der Ferne schwer erkennbar): Mindestgröße etwas höher (Menschen/Tiere bis +50 %,
+    // Fahrzeuge ab 25 m bis +20 %) und Licht-/Schattenkante (fernKante) – für ALLE Verkehrsteilnehmer gleich, auch geparkte Autos und
+    // Fehlalarm-Ziele, nur nach Entfernung: verrät nicht, was die Gefahr ist. W.fernAlt (nur Test) = Darstellung vorher.
+    const fernVerkehr = /^(menschen|tiere|fahrzeuge|gegenverkehr|seitlich)\//.test(k);
+    if (W.fernAlt) { if (fernZiel && ms.h) { const min = Math.min(h * 1.35, 12 * (ms.h / 1.8)); if (h < min) { w *= min / h; h = min; } } }
+    else if (fernZiel && ms.h) { const min = Math.min(h * 1.5, 14 * (ms.h / 1.8)); if (h < min) { w *= min / h; h = min; } }
+    else if (fernVerkehr && z > 25) { const min = Math.min(w * 1.2, 16 * (ms.b || slot.breite || 1.9) / 1.9); if (w < min) { h *= min / w; w = min; } }
     // Seitenansichten blicken im Bild nach links; wer nach rechts geht oder schaut, wird gespiegelt
     // quer: Front im Bild links; wer rückwärts fährt (licht.rueck), zeigt das Heck in Fahrtrichtung
     const spiegeln = o.typ === 'quer' ? (o.vx > 0) !== !!(o.licht && o.licht.rueck) : o.typ !== 'fahrzeug' && (o.vx > 0 || (!o.vx && o.blick > 0)) && slot.spiegeln !== false;
@@ -599,9 +629,11 @@
     const x0 = ax - w * anker[0], y0 = ay - h * anker[1];
     const quelle = dunkelHier() ? bildDunkel(img, nachtF(z)) : img;
     g.save();
-    if (fernZiel) { g.shadowColor = W.wetter === 'nebel' ? 'rgba(18,22,26,.7)' : 'rgba(0,0,0,.5)'; g.shadowBlur = klemm((z - 18) / 14, 1, 2.5); }
     if (spiegeln) { g.translate(ax * 2, 0); g.scale(-1, 1); }
-    g.drawImage(quelle, x0, y0, w, h);
+    if (W.fernAlt) {
+      if (fernZiel) { g.shadowColor = W.wetter === 'nebel' ? 'rgba(18,22,26,.7)' : 'rgba(0,0,0,.5)'; g.shadowBlur = klemm((z - 18) / 14, 1, 2.5); }
+      g.drawImage(quelle, x0, y0, w, h);
+    } else { if (fernVerkehr) fernKante(img, fernStaerke(z), x0, y0, w, h); g.drawImage(quelle, x0, y0, w, h); }
     g.restore();
     // leeres Kennzeichenschild im Bild: „BAG-…“ aus dem Code (Lage schild = [x, y, b, h] als Anteil des Bildes, je Bild gemessen)
     const schild = o.typ === 'fahrzeug' ? (wahl.mass ? ms.schild : slot.schild) : null;
@@ -639,9 +671,16 @@
   // ---------- Körper zeichnen ----------
   const LANG = { haus: 1, hecke: 1, gelaender: 1, fassade: 1 };   // Sortierung nach dem fernen Ende
   const BLEIBT_SICHTBAR = { fassade: 1, querreihe: 1, bruecke: 1,  fahrzeug: 1, zug: 1, augen: 1, lichtschein: 1, anzeige: 1, portal: 1, schild: 1, ampel: 1, haus: 1, baum: 1, leitplanke: 1, pfosten: 1, laterne: 1, hecke: 1, gelaender: 1, bake: 1, windsack: 1 };
+  const NEBEL_SCHEMEN = { fahrzeug: 1, quer: 1, person: 1, radler: 1, reh: 1, hund: 1, wildschwein: 1, pferd: 1, schild: 1, ampel: 1, ball: 1 };
   function sichtAlpha(z, o) {
     const s = W.sichtWeite || W.sicht || 400;
-    if (W.wetter === 'nebel') return klemm(1.5 - z / (W.sicht || 70), 0, 1);   // letzte Runde: etwas früher erkennbar (vorher 1,35)
+    if (W.wetter === 'nebel') {
+      const a = klemm(1.5 - z / (W.sicht || 70), 0, 1);   // letzte Runde: etwas früher erkennbar (vorher 1,35)
+      // Kleine Runde 29.10.2026: Verkehrsteilnehmer und Schilder im Nebel nie ganz unsichtbar, solange sie nah genug sind (bis 2,3 × Sicht
+      // höchstens 20 % Deckkraft) – für alle gleich, Nebel bleibt Nebel. Ausnahme: Rundumleuchte (eigenes Vorzeichen, siehe koerper).
+      if (W.fernAlt || !o || !NEBEL_SCHEMEN[o.typ] || o.rundum) return a;
+      return Math.max(a, 0.2 * klemm((2.3 - z / (W.sicht || 70)) / 0.8, 0, 1));
+    }
     if (s >= 250 || (o && BLEIBT_SICHTBAR[o.typ])) return 1;
     return klemm(1.35 - z / (s * (W.licht === 'fern' ? 1.6 : 1)), 0, 1);
   }
@@ -1358,7 +1397,11 @@
   function schild(o, z) {
     if (z < 1.2) return;
     const m = mpx(z), x = xs(o.x, z), y = ys(0, z), nacht = W.wetter === 'nacht';
-    const hoch = o.hoch || (o.art === 'blau' ? 4.5 : 2.3), gr = (o.groesse || (o.art === 'blau' ? 2.2 : 0.65)) * m;
+    const hoch = o.hoch || (o.art === 'blau' ? 4.5 : 2.3);
+    let gr = (o.groesse || (o.art === 'blau' ? 2.2 : 0.65)) * m;
+    // Kleine Runde 29.10.2026: ferne Schilder etwas größer (höchstens +30 %, Ziel ca. 12 px; alle Schilder gleich)
+    const fernS = o.art === 'blau' || o.portal ? 0 : fernStaerke(z);
+    if (fernS > 0) gr = Math.max(gr, Math.min(gr * 1.3, 12));
     g.fillStyle = nacht ? '#1a1b1c' : '#8d9296';
     if (o.art !== 'blau' && !o.portal) g.fillRect(x - Math.max(0.5, 0.04 * m), ys(hoch, z), Math.max(1, 0.08 * m), y - ys(hoch, z));
     else { g.fillRect(x - gr * 0.4, ys(hoch - 1, z), Math.max(1, 0.1 * m), y - ys(hoch - 1, z)); g.fillRect(x + gr * 0.4, ys(hoch - 1, z), Math.max(1, 0.1 * m), y - ys(hoch - 1, z)); }
@@ -2567,6 +2610,17 @@
     // „Doppelbremse“ mit drei Punkten links im Armaturenbrett (rot = schon gebremst)
     if (!W.zeigeDoppel) return;
     const dk = doppelKasten(L), w = dk.w, h = dk.h, x0 = dk.x, y0 = dk.y;
+    // Kleine Runde 29.10.2026: Warnung nach der vorletzten Doppelbremse – Kasten leuchtet ca. 3s sanft rot auf (ein-/ausblenden,
+    // dazwischen weicher Puls; reduced-motion ohne Puls)
+    const wn = W.dbWarn || 0;
+    if (wn > 0) {
+      const huelle = Math.min(1, (3.2 - wn) / 0.35, wn / 0.6), puls = W.ruhig ? 1 : 0.6 + 0.4 * Math.sin(performance.now() / 1000 * Math.PI * 2 / 1.1);
+      const a = Math.max(0, huelle) * puls;
+      g.save(); g.shadowColor = `rgba(224,69,31,${0.9 * a})`; g.shadowBlur = 16 * a;
+      g.fillStyle = `rgba(224,69,31,${0.32 * a})`; g.beginPath(); g.roundRect(x0 - 3, y0 - 3, w + 6, h + 6, 13); g.fill();
+      g.restore();
+      g.strokeStyle = `rgba(255,140,110,${0.85 * a})`; g.lineWidth = 1.6; g.beginPath(); g.roundRect(x0 - 2, y0 - 2, w + 4, h + 4, 12.5); g.stroke();
+    }
     g.fillStyle = 'rgba(16,18,20,.6)'; g.beginPath(); g.roundRect(x0, y0, w, h, 11); g.fill();
     g.fillStyle = '#e6ebe8'; g.font = `500 11px ${SCHRIFT}`; g.textAlign = 'left'; g.textBaseline = 'middle';
     g.fillText('Doppelbremse', x0 + 10, y0 + 11.5);

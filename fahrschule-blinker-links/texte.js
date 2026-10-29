@@ -2981,7 +2981,7 @@ window.BL_TEXTE = {
    },
    {
     "id": "SP05",
-    "text": "Hände auf neun und drei Uhr, Blick nach vorn. Los geht's.",
+    "text": "Spiegel, Blinker, Bremse – alles in Reichweite. Los geht's.",
     "mimik": "neutral"
    },
    {
@@ -2991,7 +2991,7 @@ window.BL_TEXTE = {
    },
    {
     "id": "SP07",
-    "text": "Heute üben wir Gefahren ahnen. Augen auf, Fuß locker.",
+    "text": "Heute üben wir Gefahren ahnen. Augen auf, Daumen bereit.",
     "mimik": "neutral"
    }
   ],
@@ -3272,12 +3272,12 @@ window.BL_TEXTE = {
    },
    {
     "id": "SP60",
-    "text": "Glatt hier. Fahr, als lägen rohe Eier im Kofferraum.",
+    "text": "Glatt hier. Früh bremsen, als lägen rohe Eier im Kofferraum.",
     "mimik": "neutral"
    },
    {
     "id": "SP61",
-    "text": "Die Sonne blendet? Klappe runter, Fuß leichter.",
+    "text": "Die Sonne blendet? Dann schauen wir genauer und bremsen früher.",
     "mimik": "neutral"
    },
    {
@@ -3419,6 +3419,15 @@ window.BL_TEXTE = {
   "DB_ZAEHLER": {
    "Text": "3 = Fahrt vorbei"
   },
+  "DB_WARNUNG_1": {
+   "Text": "Noch eine Doppelbremse, dann ist für heute Schluss."
+  },
+  "DB_WARNUNG_2": {
+   "Text": "Schau genau – noch eine Doppelbremse, dann ist Schluss."
+  },
+  "DB_WARNUNG_3": {
+   "Text": "Ruhig weiter – die nächste Doppelbremse beendet die Fahrt."
+  },
   "RUECK_GEAHNT": {
    "Text": "Gefahr geahnt – Bonus"
   },
@@ -3520,19 +3529,19 @@ window.BL_TEXTE = {
   "H010": "Da hat ein Handgriff gefehlt.",
   "H011": "Gesehen – aber etwas spät.",
   "H012": "Das ist dir durchgerutscht – Blick weit nach vorn.",
-  "H013": "Zu schnell – Fuß vom Gas.",
+  "H013": "Zu schnell – beim nächsten Schild früher bremsen.",
   "H014": "Das schauen wir uns nochmal an.",
-  "H015": "Fahr los, wenn es frei ist.",
+  "H015": "Raus vom Rand, wenn es frei ist – erst schauen, dann lenken.",
   "H016": "Ich blende ab – im Fernlicht bleibt Wild oft stehen.",
   "H017": "Ich blende ab – Fernlicht blendet den Vordermann im Spiegel.",
   "H018": "Stauende – Warnblinker an, so sind die hinter uns gewarnt.",
   "H019": "Blaulicht und Martinshorn – wir machen sofort Platz.",
-  "H020": "Hinter uns drängelt einer – Tempo halten, ruhig bleiben.",
+  "H020": "Hinter uns drängelt einer – öfter in den Spiegel schauen.",
   "H021": "Sicht wieder über 50 m – Nebelschlussleuchte aus.",
   "H022": "Erst zurück, wenn der Lkw ganz im Innenspiegel ist.",
   "H023": "Erst rüber, wenn der Ausfädelungsstreifen beginnt.",
   "H024": "Bis vorn an die Engstelle – erst dort im Wechsel einfädeln.",
-  "H025": "Matsch zwischen den Spuren – vorher langsamer, ruhig lenken.",
+  "H025": "Matsch zwischen den Spuren – früh erkennen, vorher bremsen.",
   "H026": "Ich blende ab – sonst blenden wir den Gegenverkehr.",
   "H027": "Im Tunnel Abblendlicht an – Tagfahrlicht reicht nicht.",
   "H028": "Es dämmert – ich mach das Licht an, damit man uns sieht.",
@@ -3541,7 +3550,7 @@ window.BL_TEXTE = {
   "H031": "Wir nehmen die nächste Ausfahrt.",
   "H032": "Gleich kommt unsere Ausfahrt.",
   "H033": "Bei dieser Sicht fahren wir langsamer.",
-  "H034": "Glatt heute – sanft bremsen, der Bremsweg wird viel länger.",
+  "H034": "Glatt heute – früh bremsen, der Bremsweg wird viel länger.",
   "H035": "Erste Fahrstunde – ich zeig dir kurz die Handgriffe.",
   "H036": "Eine Gefahr ist alles, was uns gleich in die Quere kommt.",
   "H037": "Siehst du eine, tippe sie direkt auf der Scheibe an.",
@@ -3571,8 +3580,8 @@ window.BL_TEXTE = {
  },
  "tipps": {
   "doppelbremse": [
-   "Tipp: Fuß früh vom Gas, sobald sich vorne etwas ändert.",
-   "Tipp: Schau weit nach vorn – dann reicht sanftes Bremsen."
+   "Tipp: Tippe Vorzeichen früh an – dann wirst du rechtzeitig langsamer.",
+   "Tipp: Schau weit nach vorn – dann reicht kurzes Bremsen."
   ],
   "spaet": [
    "Tipp: Gefahr gesehen? Gleich antippen – nicht erst kurz davor.",
@@ -3580,7 +3589,7 @@ window.BL_TEXTE = {
   ],
   "tempo": [
    "Tipp: Bei Tempo-Schildern früher bremsen – nicht erst am Schild.",
-   "Tipp: Schild in Sicht? Gleich vom Gas, dann passt es am Schild."
+   "Tipp: Schild in Sicht? Früh bremsen, dann passt es am Schild."
   ],
   "fehlalarm": [
    "Tipp: Tippe erst, wenn dir wirklich jemand in die Quere kommen kann.",
@@ -3623,8 +3632,8 @@ window.BL_TEXTE = {
    "Tipp: Wer links abbiegt, lässt den Gegenverkehr zuerst fahren."
   ],
   "abstand": [
-   "Tipp: Halte als Abstand mindestens den halben Tacho in Metern.",
-   "Tipp: Lass vorne Platz – bremst der Vordermann, bleibt dir Zeit."
+   "Tipp: Wird es vorne oder seitlich eng, gleich antippen und bremsen.",
+   "Tipp: Erst vorbei oder zurück, wenn genug Platz ist – sonst bremsen."
   ],
   "licht": [
    "Tipp: Dämmerung, Tunnel, Regen – schalte das Licht früh ein.",

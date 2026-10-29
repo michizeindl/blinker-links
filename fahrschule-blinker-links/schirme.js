@@ -295,8 +295,14 @@
   const popups = el('div', 'bl-popups');
   const fpsAnz = el('div', 'bl-fps'); fpsAnz.hidden = true;
   document.body.append(fahrt, popups, fpsAnz);
-  let stimmungJetzt = '', blasenUhr = 0;
-  function fahrlehrer(stimmung, text, dauer) {
+  let stimmungJetzt = '', blasenUhr = 0, warnBis = 0;
+  // Kleine Runde 29.10.2026: ton = 'halb' (z. B. „Gesehen – aber etwas spät“), 'schlecht' (verpasst, zu schnell, Fehlalarm), 'warn'
+  // (Warnung vor der dritten Doppelbremse) – gleiche weiße Blase, nur ein farbiger Streifen links; Text immer dunkel auf Weiß
+  function fahrlehrer(stimmung, text, dauer, ton) {
+    // Warnung vor der dritten Doppelbremse bleibt stehen: nur eine neue Doppelbremse (erschrickt) oder das Ende (seufzt) löst sie ab
+    if (ton === 'warn') warnBis = performance.now() + (dauer || 3) * 1000 - 60;
+    else if (performance.now() < warnBis && stimmung !== 'erschrickt' && stimmung !== 'seufzt') return;
+    else warnBis = 0;
     const fig = fahrt.querySelector('.bl-figur');
     if (stimmung !== stimmungJetzt) {
       stimmungJetzt = stimmung; fig.innerHTML = fahrlehrerSvg(stimmung);
@@ -306,7 +312,7 @@
     const sb = fahrt.querySelector('.bl-sb');
     clearTimeout(blasenUhr);
     if (!text) { sb.classList.remove('an'); return; }
-    sb.textContent = text; sb.classList.add('an');
+    sb.textContent = text; sb.className = 'bl-sb an' + (ton ? ' ' + ton : '');
     blasenUhr = setTimeout(() => { sb.classList.remove('an'); if (stimmungJetzt !== 'neutral') fahrlehrer('neutral', '', 0); }, (dauer || 2.4) * 1000);
   }
   function hinweis(schritte) {
@@ -618,7 +624,7 @@
     einf, etikett,
     start: startbild, ende: endbild, endeAus() { ende.hidden = true; },
     beimNochmal(fn) { nochmalFn = fn; },
-    fahrt(an) { fahrt.hidden = !an; if (!an) { fahrt.querySelector('.bl-sb').classList.remove('an'); hinweis(null); } },
+    fahrt(an) { fahrt.hidden = !an; if (!an) { warnBis = 0; fahrt.querySelector('.bl-sb').classList.remove('an'); hinweis(null); } },
     fahrlehrer, hinweis, popup, titel, karte, kreuzung, fahrlehrerSvg,
     fps(t) { fpsAnz.hidden = false; fpsAnz.textContent = t; },
   };
