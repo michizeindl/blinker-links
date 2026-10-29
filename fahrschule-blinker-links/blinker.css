@@ -52,7 +52,8 @@ stop.hell { stop-color: var(--gruen-hell); } stop.mitte { stop-color: var(--grue
 @keyframes bandRein { from { opacity: 0; transform: translateX(-50%) rotate(-12deg) scale(.6); } to { opacity: 1; transform: translateX(-50%) rotate(-3deg) scale(1); } }
 @keyframes bandPuls { 0%, 100% { transform: translateX(-50%) rotate(-3deg) scale(1); } 50% { transform: translateX(-50%) rotate(-3deg) scale(1.05); } }
 .bl-pfeil { position: absolute; left: 22px; top: 50%; width: 34px; height: 26px; margin-top: -10px; overflow: visible; }
-.bl-anl { position: relative; margin: 0; padding: 40px 22px 16px 66px; font: 400 14px/1.42 'Kanit', sans-serif; color: rgba(255,255,255,.96); }
+/* Anleitungs-Schild ohne orangen Pfeil (MZ, 29.10.2026): Text beginnt gleich hinter der Pfeilspitze des Schilds */
+.bl-anl { position: relative; margin: 0; padding: 40px 24px 16px 46px; font: 400 14px/1.42 'Kanit', sans-serif; color: rgba(255,255,255,.96); }
 
 .bl-pfosten { position: absolute; right: 52px; top: 0; bottom: -60px; width: 12px; border-radius: 3px; z-index: 0;
   background: linear-gradient(90deg, #8c9196, #e3e6e8 35%, #b4b8bc 60%, #7a7f84); box-shadow: 2px 0 4px rgba(0,0,0,.25); }
@@ -162,7 +163,7 @@ span.bl-schalter { cursor: default; }
   .bl-figur { width: 50px; height: 50px; }
   .bl-blase { font-size: 15px; padding: 8px 12px; }
   .bl-gross { margin-top: 28px; }
-  .bl-anl { font-size: 13px; padding: 36px 16px 12px 58px; }
+  .bl-anl { font-size: 13px; padding: 36px 18px 12px 40px; }
   .bl-knoepfe { margin-top: 16px; }
   .bl-knopf { padding: 12px 0; font-size: 17px; }
   .bl-knopf.zweit { padding: 10px 0; }
@@ -215,7 +216,8 @@ span.bl-schalter { cursor: default; }
 .bl-popup span { display: inline-block; margin-top: 3px; font: 600 12px 'Kanit', sans-serif; padding: 2px 8px; border-radius: 999px; background: rgba(16,18,20,.7); color: #fff; }
 .bl-popup.gut b { color: #8ff0ae; } .bl-popup.mittel b { color: #ffd014; } .bl-popup.schlecht b { color: #ff8a6a; }
 @keyframes aufsteigen { 0% { opacity: 0; transform: translate(-50%, -30%) scale(.8); } 15% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -110%); } }
-.bl-fps { position: fixed; left: 8px; bottom: 8px; z-index: 30; font: 600 12px 'Kanit', sans-serif; color: #fff; background: rgba(0,0,0,.6); padding: 3px 8px; border-radius: 6px; pointer-events: none; }
+/* #fps (29.10.2026): klein oben links unter dem Haus-Knopf, nur mit dieser Adresse sichtbar */
+.bl-fps { position: fixed; left: max(6px, env(safe-area-inset-left, 0px)); top: calc(env(safe-area-inset-top, 0px) + 60px); z-index: 30; font: 500 10.5px/1.25 'Kanit', sans-serif; color: #fff; background: rgba(0,0,0,.55); padding: 2px 6px; border-radius: 5px; pointer-events: none; font-variant-numeric: tabular-nums; white-space: pre; }
 .bl-fps[hidden] { display: none; }
 
 /* Einblendungen: Stufen-Titel und Gebiet je Situation */
@@ -232,7 +234,8 @@ span.bl-schalter { cursor: default; }
 .bl-titelschild { position: relative; width: min(320px, 86vw); height: 66px; filter: drop-shadow(0 4px 6px rgba(0,0,0,.4)); transform: translateX(40px); opacity: 0; transition: transform .5s cubic-bezier(.2,1.2,.4,1), opacity .4s; }
 .bl-einbl.rein .bl-titelschild { transform: none; opacity: 1; }
 .bl-titelschild .platte { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.bl-titelschild .inhalt { position: absolute; left: 13%; right: 5%; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; gap: 10px; color: #fff; font: italic 800 clamp(20px, 6.4vw, 26px)/1 'Kanit', sans-serif; white-space: nowrap; }
+/* Level-Titel ohne orangen Pfeil (MZ, 29.10.2026): Text mittig im geraden Teil des Schilds */
+.bl-titelschild .inhalt { position: absolute; left: 11%; right: 5%; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; gap: 10px; color: #fff; font: italic 800 clamp(19px, 6.2vw, 24px)/1 'Kanit', sans-serif; white-space: nowrap; }
 .bl-titelschild .bl-pfeil { position: static; margin: 0; width: 28px; height: 22px; flex: none; }
 .bl-einbl.titel p { margin: 14px 0 0; color: #fff; font: 500 15px 'Kanit', sans-serif; text-shadow: 0 1px 4px rgba(0,0,0,.7); }
 
@@ -404,3 +407,41 @@ html.ruhig .bl-etikett.rein, html.ruhig .bl-etikett.unten.rein { animation: einb
   .bl-ende .bl-unten { margin-top: 8px; gap: 7px; }
 }
 @media (max-width: 350px) { .bl-ende .bl-prot { padding-left: 6px; padding-right: 6px; } }
+/* Endbild ohne Scrollen auch auf 360 × 740 (29.10.2026, MZ): alles bleibt, nur dichter – Zielschild flacher, Netz kleiner (schirme.js),
+   Bestwert und Mappe kleiner in einer Reihe, Schalter und Knöpfe niedriger. */
+@media (orientation: portrait) and (max-height: 780px) {
+  .bl-ende { padding-top: max(50px, calc(env(safe-area-inset-top, 0px) + 46px)); padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)); }
+  .bl-ende .bl-zielwrap { margin-top: 10px; }
+  .bl-ende .bl-ziel { padding: 22px 14px 8px; }
+  .bl-ende .bl-ziel .ort { font-size: 16px; }
+  .bl-ende .bl-ziel .zahl { font-size: 46px; margin-top: 2px; }
+  .bl-ende .bl-ziel .von { font-size: 13px; }
+  .bl-ende .bl-plakette { margin-top: 4px; padding: 4px 12px 4px 10px; font-size: 14px; }
+  .bl-ende .bl-zeilen:has(.bl-rechnung) { margin-top: 10px; padding: 4px 12px 5px; gap: 0; }
+  .bl-ende .bl-zeilen .bl-unterzeile { font-size: 13px; line-height: 1.28; }
+  .bl-ende .bl-bestreihe { flex-wrap: nowrap; gap: 6px; }
+  .bl-ende .bl-bestreihe .bl-bestzeile { font-size: 12px; white-space: nowrap; }
+  .bl-ende .bl-bestreihe .bl-mappezeile { font-size: 12.5px; gap: 5px; white-space: nowrap; }
+  .bl-ende .bl-prot { padding: 6px 10px; }
+  .bl-ende .bl-fehler li { margin-top: 1px; }
+  .bl-ende .bl-tipp { margin-top: 4px; padding: 3px 8px; }
+  .bl-ende .bl-unten { margin-top: 6px; gap: 6px; }
+  .bl-ende .bl-reihe { gap: 7px; }
+  .bl-ende .bl-schalter { min-height: 40px; padding: 4px 9px 4px 11px; font-size: 12.5px; line-height: 1.15; }
+  .bl-ende .bl-knopf { padding: 11px 0; font-size: 17px; }
+  .bl-ende .bl-knopf.zweit { padding: 9px 0; }
+}
+/* schmale Handys: Bestwert und Mappe dürfen umbrechen (sonst ragt der Pfeil aus der Tafel) */
+@media (max-width: 340px) { .bl-ende .bl-bestreihe { flex-wrap: wrap; justify-content: center; row-gap: 0; } }
+/* sehr niedrige Hochformate (320 × 568): noch dichter; Fahrlehrer-Figur kleiner */
+@media (orientation: portrait) and (max-height: 640px) {
+  .bl-ende { padding-top: max(68px, calc(env(safe-area-inset-top, 0px) + 64px)); }   /* Band darf das Logo nicht berühren */
+  .bl-ende .bl-ziel { padding: 18px 12px 6px; }
+  .bl-ende .bl-ziel .ort { font-size: 15px; }
+  .bl-ende .bl-ziel .zahl { font-size: 40px; }
+  .bl-ende .bl-flende { width: 62px; bottom: -10px; }
+  .bl-ende .bl-zeilen .bl-unterzeile { font-size: 12.5px; }
+  .bl-ende .bl-schalter { min-height: 36px; }
+  .bl-ende .bl-knopf { padding: 9px 0; font-size: 16px; }
+  .bl-ende .bl-knopf.zweit { padding: 7px 0; }
+}

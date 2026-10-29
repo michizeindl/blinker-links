@@ -66,9 +66,9 @@
   const misch = (a, b, p) => a + (b - a) * p;
   const kasten = el => { const r = el.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; };
 
-  const logo = $('#logo'), titel = $('#titel'), titelPfeil = $('#titelPfeil'), slogan = $('#slogan'), scheibe = $('#scheibe'), brett = $('#brett');
+  const logo = $('#logo'), titel = $('#titel'), titelPfeil = $('#titelPfeil'), scheibe = $('#scheibe'), brett = $('#brett');
   let logoSvg = null, logoZeichen = null, logoSchrift = null;
-  const teile = [logo, titel, titelPfeil, slogan, scheibe, brett];
+  const teile = [logo, titel, titelPfeil, scheibe, brett];   // Slogan entfernt (MZ, 29.10.2026)
 
   function bild(t) {
     const W = innerWidth, H = innerHeight;
@@ -127,12 +127,11 @@
     fPfeil.querySelector('.glimm').style.opacity = 1 - pp;
     titelPfeil.style.opacity = t < 1.35 ? 0 : 1;
 
-    // ---- Scheibe frei, Armaturenbrett von unten (1,4–2,2s), Unterzeile blendet ein
+    // ---- Scheibe frei, Armaturenbrett von unten (1,4–2,2s)
     scheibe.style.opacity = t < 1.4 ? 0 : 1;
     const pb = ausEase(ab(t, 1.45, 2.2));
     brett.style.opacity = t < 1.45 ? 0 : 1;
     brett.style.transform = `translateY(${((1 - pb) * H * 0.6).toFixed(1)}px)`;
-    slogan.style.opacity = weich(ab(t, 1.9, 2.3));
 
     // ---- Tachozeiger 0 → Bestwert (2,2–3,0s), Cockpit-Pfeil übernimmt (ab 2,6s)
     const pt = ab(t, 2.2, 3.0), e = ausEase(pt);

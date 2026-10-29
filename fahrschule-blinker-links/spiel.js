@@ -11,7 +11,8 @@
 //   #situation=S017 (oder =17, auch KR08)  diese Situation zuerst (auch außerhalb der Stufe)   #anzahl=3   nur drei Situationen
 //   #kreuzung   Kreuzung zuerst    #los   ohne Startbild sofort losfahren    #tempo=2   doppelte Spielgeschwindigkeit
 //   #ende=854   Beispiel-Endbild (nichts wird gespeichert)    #abbruch   Beispiel-Endbild Abbruch
-//   #ruhig      wie „Bewegung reduzieren“    #einfach   einfache Darstellung erzwingen    #fps   Bildrate anzeigen
+//   #ruhig      wie „Bewegung reduzieren“    #einfach   einfache Darstellung erzwingen
+//   #fps        Bildrate oben links: aktuell (letzte 90 Bilder) – Ø seit Laden – min (schlechteste Sekunde) – normal/einfach
 //   #frei       alle Stufen frei (nur Anzeige)    #best=854   Bestwert im Startbild nur anzeigen
 (function () {
   'use strict';
@@ -244,6 +245,8 @@
     if (popup && t.ist > 0) UI.popup(F && F.einf ? '' : '+' + Math.round(t.ist), popup[0], popup[1], 'gut', wort);
   }
   function fehler(art, text) {
+    // verpasst/tempo in Abstands- und Licht-Situationen → eigene Art (Tipp im Endbild, daten.js FEHLERART_SITUATION)
+    if ((art === 'verpasst' || art === 'tempo') && R && R.def && D.FEHLERART_SITUATION && D.FEHLERART_SITUATION[R.def.id]) art = D.FEHLERART_SITUATION[R.def.id];
     F.fehler.push({ art, text: text.includes(' – ') ? text : text + ' – ' + gebietName(R ? R.def.gebiet : ''), gewicht: D.FEHLERGEWICHT[art] || 1 });
   }
   // Gefahr: obj/objs = was antippen; hind() = Hindernis { pos, v, abstand } (zu spät → Doppelbremse) oder bis() = Zeitpunkt,
@@ -946,6 +949,12 @@
   function fpsMessen(echtDt) {
     FPS.laufend.push(echtDt); if (FPS.laufend.length > 90) FPS.laufend.shift();
     FPS.wert = FPS.laufend.length / FPS.laufend.reduce((a, b) => a + b, 0);
+    // Anzeige #fps (29.10.2026, MZ: am echten Handy ablesen): Mittel seit dem Laden, Minimum je volle Sekunde (erste 1,5s Anlauf ohne)
+    FPS.alleZeit = (FPS.alleZeit || 0) + echtDt; FPS.alleBilder = (FPS.alleBilder || 0) + 1;
+    if (FPS.alleZeit > 1.5) {
+      FPS.sekZeit = (FPS.sekZeit || 0) + echtDt; FPS.sekBilder = (FPS.sekBilder || 0) + 1;
+      if (FPS.sekZeit >= 1) { const r = FPS.sekBilder / FPS.sekZeit; FPS.min = FPS.min == null ? r : Math.min(FPS.min, r); FPS.sekZeit = 0; FPS.sekBilder = 0; }
+    }
     if (!F) return;
     const einfachMerken = () => { W.einfach = true; try { sessionStorage.setItem('mg:blinker-links:einfach', '1'); } catch (e) { /* egal */ } };
     if (FPS.messung == null) {
@@ -1079,10 +1088,10 @@
     },
     // Übung 1: ein Ball rollt von rechts auf die Straße und bleibt liegen, bis er angetippt ist (dann rollt er weiter, wir fahren an)
     ballStart() {
-      const b = this.ball = dazu({ typ: 'ball', x: 4.6, pos: W.s + 55, dreh: 0, vx: -1.4, v: 0 });
+      const b = this.ball = dazu({ typ: 'ball', x: 4.6, pos: W.s + 55, dreh: 0, vx: -1.4, v: 0, r: 0.18 });   // Ball 1,5× (MZ, 29.10.2026: „etwas zu klein“)
       R.gefahr = gefahr({ obj: b, ausloesen: () => true, frei: () => R.gefahr.erkannt && b.x < -3 });
       teil('erkannt', D.PUNKTE.erkannt);
-      R.vorFolgen = () => (R.gefahr && !R.gefahr.geloest ? { pos: b.pos, v: 0, abstand: 14 } : null);
+      R.vorFolgen = () => (R.gefahr && !R.gefahr.geloest ? { pos: b.pos, v: 0, abstand: 12 } : null);   // hält 12 m statt 14 m davor
       R.einfBall = () => { if (!R.gefahr || R.gefahr.obj !== b) return; if (!R.gefahr.erkannt && b.x < 1.0) b.vx = 0; if (R.gefahr.erkannt) b.vx = b.x < -7 ? 0 : -2.6; b.dreh = (b.dreh || 0) + b.vx * 0.06; };
     },
     ballErkannt() { return !!(R && R.gefahr && R.gefahr.erkannt); },
@@ -1158,7 +1167,8 @@
     for (let i = i0; i <= i0 + 1 && i < F.liste.length; i++) {
       const def = F.liste[i], p = def.p || {}, umg = p.umgebung || (D.GEBIETE[def.gebiet] || D.GEBIETE.land).umgebung;
       const w = def.wetter || (def.gebiet === 'nacht' ? 'nacht' : 'klar'), dunkel = /nacht/.test(w);
-      teile.add('(fassade|rand)/' + umg + '-' + (dunkel ? '' : '(?!.*-nacht$)'));
+      teile.add('(fassade|rand|hausseite)/' + umg + '-' + (dunkel ? '' : '(?!.*-nacht$)'));
+      if (umg === 'stadt' || umg === 'wohngebiet') teile.add('textur/(putz-hell|dach-)');   // Häuser mit Tiefe (29.10.2026)
       teile.add('kulisse/horizont-' + (umg === 'autobahn' ? 'land' : umg));
       if (umg === 'land' || umg === 'wohngebiet') teile.add('baum/');
       if (umg === 'land') teile.add('tiere/');
@@ -1171,7 +1181,9 @@
   function schritt(dtRahmen) {
     const jetzt = performance.now(), echt = (jetzt - echtZuletzt) / 1000; echtZuletzt = jetzt;
     if (echt > 0 && echt < 0.5) fpsMessen(echt);
-    if (TEST.fps) UI.fps(Math.round(FPS.wert) + ' B/s' + (W.einfach ? ' – einfach' : ''));
+    if (TEST.fps) UI.fps(`${Math.round(FPS.wert)} B/s
+Ø ${Math.round(FPS.alleBilder / Math.max(FPS.alleZeit, 0.001))} – min ${FPS.min == null ? '…' : Math.round(FPS.min)}
+${W.einfach ? 'einfach' : 'normal'}`);
     const dt = dtRahmen * TEST.tempo;
     zeit += dt;
     if (!F) return;

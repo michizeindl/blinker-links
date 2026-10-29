@@ -1,7 +1,7 @@
 // Führerscheinmappe (Phase 2b, Baustein 17): gesammelte Situationskarten der Startseite „Blinker links“.
 // Eine Karte ist gesammelt, wenn die Situation einmal sauber gemeistert wurde (spiel.js → Statistik „karten“ in start/basis.js).
 // Texte: start/karten.js (erzeugt von Material/Skripte/texte-bauen.py), wird erst beim Öffnen geladen.
-// Öffnen: Knopf unter „Spielen“, Kartenzähler im Kombi-Instrument oder Adresse #mappe (Weg aus dem Endbild).
+// Öffnen: Knopf unter „Go“, Kartenzähler im Kombi-Instrument oder Adresse #mappe (Weg aus dem Endbild).
 (function () {
   'use strict';
   const B = window.BL_BASIS, esc = B.esc, ruhig = B.ruhig();

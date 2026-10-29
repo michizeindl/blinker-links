@@ -446,9 +446,19 @@
         const k = pool[i], ms = BI.mass(k) || { h: 12, px: [3, 2] };
         r.zuletzt.push(k); if (r.zuletzt.length > Math.min(3, pool.length - 1)) r.zuletzt.shift();
         const hoehe = ms.h, laenge = hoehe * ms.px[0] / ms.px[1], rl = zz();
-        r.teile.push({ key: k, pos: r.ende, laenge, hoehe, farbe: ms.farbe || '#cbbca6', vor: r.luecke == null ? 9 : r.luecke });
+        // vorHoehe = Höhe des Nachbarn davor (Fable 29.10.2026): die Hausecke wird nur gezeichnet, wo sie herausragen kann
+        r.teile.push({ key: k, pos: r.ende, laenge, hoehe, farbe: ms.farbe || '#cbbca6', vor: r.luecke == null ? 9 : r.luecke, vorHoehe: r.teile.length ? r.teile[r.teile.length - 1].hoehe : 0 });
         // meist geschlossene Zeile (Innenstadt), sonst Durchgang oder Einfahrt; im Wohngebiet lockerer
-        r.luecke = umg === 'stadt' ? (rl < 0.55 ? 0.15 : rl < 0.85 ? 1.2 + rl * 2 : 4 + rl * 3) : (rl < 0.3 ? 1 : 2.5 + rl * 5);
+        // Fable 29.10.2026: geschlossene Zeile ohne Spalt (vorher 0,15 m – ergab einen Himmelsschlitz zwischen den Häusern)
+        r.luecke = umg === 'stadt' ? (rl < 0.55 ? 0 : rl < 0.85 ? 1.2 + rl * 2 : 4 + rl * 3) : (rl < 0.3 ? 1 : 2.5 + rl * 5);
+        // Garage/Nebengebäude als gelegentlicher Lückenfüller im Wohngebiet (29.10.2026): in einer Einfahrtslücke, 1,5 m zurückgesetzt;
+        // eigener Zufall (zz bleibt unberührt, damit die übrige Reihe gleich bleibt)
+        const gm = umg === 'wohngebiet' && r.luecke > 4 && BI.mass('hausseite/wohngebiet-garage');
+        if (gm && zufall(r.teile.length, salz + 40, W.saat) < 0.25) {
+          const gl = gm.h * gm.px[0] / gm.px[1], vorG = 0.9 + zufall(r.teile.length, salz + 41, W.saat) * 1.2;
+          r.teile.push({ key: 'hausseite/wohngebiet-garage', pos: r.ende + laenge + vorG, laenge: gl, hoehe: gm.h, farbe: gm.farbe || '#e3dccd', vor: vorG, vorHoehe: hoehe, dx: 1.5 });
+          r.luecke = vorG + gl + 1.2 + zufall(r.teile.length, salz + 42, W.saat) * 2;
+        }
         r.ende += laenge + r.luecke;
       }
     }
@@ -483,7 +493,7 @@
       if (a < b) stuecke.push([a, b, schnitt]);
       for (const [s0, s1, cut] of stuecke) {
         if (s1 - s0 < 1.5) continue;
-        liste.push({ typ: 'fassade', teil: t, x: xFest != null ? xFest : t.x, pos: s0, laenge: s1 - s0, seite, wandVorn: !t.rand && (cut || t.vor > 0.6) });
+        liste.push({ typ: 'fassade', teil: t, x: (xFest != null ? xFest : t.x) + seite * (t.dx || 0), pos: s0, laenge: s1 - s0, seite, wandVorn: !t.rand && (cut || t.vor > 0.6) });
       }
     }
   }
@@ -531,13 +541,14 @@
   }
   function autoGeparkt(k, pos, x) {
     let s = 0; const zz = () => zufall(k, 40 + s++, W.saat);
-    return { kennzeichen: kennzeichen(zz), typ: 'fahrzeug', art: 'pkw', x, pos, farbe: AUTO[Math.floor(zufall(k, 21, W.saat) * AUTO.length)], laenge: 4.3, breite: 1.8, hoehe: 1.45, richtung: 1, geparkt: true };
+    return { kennzeichen: kennzeichen(zz), typ: 'fahrzeug', art: 'pkw', x, pos, farbe: AUTO[Math.floor(zufall(k, 21, W.saat) * AUTO.length)], laenge: 4.3, breite: 1.8, hoehe: 1.45, richtung: 1, geparkt: true,
+      _vw: Math.floor(zufall(k, 25, W.saat) * 60) };   // feste Bild-Variante je Platz: die Kulisse wird jedes Bild neu gebaut (sonst Flackern, MZ 29.10.2026)
   }
   const PASSANTEN = ['fussgaenger', 'fussgaenger', 'frau', 'jogger', 'rollator', 'frau-kinderwagen', 'rollstuhl', 'brieftraegerin', 'kind-ranzen', 'frau-tasche', 'gehstock', 'spaziergaengerin', 'junge'];
   function passant(k, pos, x) {
     // Passanten auf dem Gehweg (lebende Strecke): verschiedene gestaltete Figuren, Code-Figur nur ohne Bild
     const figur = PASSANTEN[Math.floor(zufall(k, 24, W.saat) * PASSANTEN.length)];
-    return { typ: 'person', figur, x, pos, hoehe: 1.65 + zufall(k, 23, 1) * 0.2, jacke: AUTO[Math.floor(zufall(k, 22, 2) * AUTO.length)], gehen: 0.6, richtung: 1, k };
+    return { typ: 'person', figur, x, pos, hoehe: 1.65 + zufall(k, 23, 1) * 0.2, jacke: AUTO[Math.floor(zufall(k, 22, 2) * AUTO.length)], gehen: 0.6, richtung: 1, k, _vw: Math.floor(zufall(k, 26, W.saat) * 60) };
   }
 
   // ---------- Bild-Anschluss (Phase 3) ----------
@@ -716,6 +727,256 @@
     g.fillStyle = 'rgba(0,0,0,.14)'; querFlaeche(o.x0, o.x0 + o.seite * 80, z, 0, 0.35); g.fill();
     if (nebel) g.globalAlpha = 1;
   }
+  // ---------- Häuser mit Tiefe (29.10.2026, Auftrag-Developer-Fassaden.md; Basis Fassaden-Vergleich Fable) ----------
+  // Die Fassaden sind flache Ansichten. An jedem vorderen Ende, das herausragen kann (Lücke, Schnitt an Querstraße, höher als der
+  // Nachbar davor), zeichnet hausecke() die Stirnseite des Hauses als Fläche quer zur Straße: eigene Seitenansicht (Bögen
+  // fassaden-seite-*) oder Code-Körper aus Texturen (Bogen fassaden-texturen). Die nähere Fassade überdeckt später, was verdeckt wäre.
+  // GEBAEUDE je Fassadenbild: traufe/first = Trauf-/Firsthöhe der Vorderansicht (Anteil der Bildhöhe); L/R = vorderes Ende links bzw.
+  // rechts im Bild (linke Straßenseite zeigt das linke Bildende vorn, rechte Straßenseite das rechte), überschreibt traufe/first.
+  // Je Ende: seite = Seitenansicht hausseite/<name> (Maße in SEITE) oder Code-Körper: lage 'giebel' (Giebeldreieck zur Kamera),
+  // 'walm' (Walmfläche läuft nach hinten), 'laengs' (Traufseite, Dachfläche bis zum First in der Hausmitte), 'flach' (Flachdach, Mauer);
+  // farbe = Putzfarbe dieses Endes, wenn die Seitenansicht eines anderen Hauses umgefärbt wird (Fenster, Gesimse bleiben),
+  // putz = Wandfarbe der Code-Körper (Textur putz-hell eingefärbt), dach = Dachtextur (biber, ziegel, schiefer, blech), lang = Anteil der Bildlänge des
+  // vorderen Hauses (laengs), tiefe = Haustiefe in m (sonst aus der Seitenansicht bzw. HAUS_TIEFE). null = kein Gebäude.
+  // Farben der Code-Wände: Median der Vorderansicht am jeweiligen Ende gemessen (bilder/fassade, 29.10.2026), leicht geglättet.
+  const GEBAEUDE = {
+    'stadt-1': { traufe: 0.70, first: 0.96, L: { seite: 'stadt-1' }, R: { seite: 'stadt-cafe', farbe: '#dcd2c4', first: 0.98 } },
+    'stadt-2': { traufe: 0.70, first: 0.97, L: { seite: 'stadt-2' }, R: { lage: 'flach', traufe: 0.71, putz: '#cfcfcf' } },
+    'stadt-3': { traufe: 0.72, first: 0.98, L: { seite: 'stadt-3' }, R: { seite: 'stadt-2', farbe: '#b8ad9c', first: 1 } },
+    'stadt-4': { traufe: 0.72, first: 0.99, L: { seite: 'stadt-4' }, R: { seite: 'stadt-haltestelle', farbe: '#d6d0c8', traufe: 0.70, first: 0.97 } },
+    'stadt-cafe': { traufe: 0.70, first: 0.95, L: { seite: 'stadt-4', farbe: '#b76d5a', first: 0.92 }, R: { seite: 'stadt-cafe', first: 1 } },
+    'stadt-haltestelle': { traufe: 0.70, first: 0.96, L: { seite: 'stadt-haltestelle' }, R: { seite: 'stadt-rathaus', farbe: '#d9c9a8', traufe: 0.68, first: 0.92 } },
+    // Kirche: die Vorderansicht zeigt schon die Langseite – an den Enden steht nur die Friedhofsmauer (Seitenansicht Langhaus passt dort nicht)
+    'stadt-kirche': { traufe: 0.12, first: 0.12, lage: 'flach', putz: '#cfc3a6', mauer: true },
+    'stadt-rathaus': { traufe: 0.62, first: 0.80, seite: 'stadt-rathaus' },
+    'wohngebiet-bauernhaus': { traufe: 0.60, first: 1, L: { seite: 'wohngebiet-bauernhaus', lage: 'laengs', lang: 0.8 }, R: { lage: 'laengs', traufe: 0.42, first: 0.62, putz: '#6b5238', dach: 'ziegel', lang: 0.25, tiefe: 7 } },
+    'wohngebiet-doppelhaus': { traufe: 0.72, first: 0.97, L: { seite: 'wohngebiet-doppelhaus' }, R: { seite: 'wohngebiet-doppelhaus', farbe: '#ddd5c8' } },
+    'wohngebiet-efh': { traufe: 0.53, L: { seite: 'wohngebiet-efh', lage: 'laengs', first: 0.97, lang: 0.48 }, R: { seite: 'wohngebiet-efh', farbe: '#e0dad0', lage: 'laengs', first: 0.93, lang: 0.42 } },
+    'wohngebiet-kindergarten': { traufe: 0.63, first: 0.95, seite: 'wohngebiet-kindergarten', lage: 'laengs', lang: 0.36 },
+    'wohngebiet-reihenhaus': { traufe: 0.72, first: 0.97, L: { seite: 'wohngebiet-reihenhaus' }, R: { seite: 'wohngebiet-reihenhaus', farbe: '#c4b8a6' } },
+    'wohngebiet-schule': { traufe: 0.72, first: 0.93, seite: 'wohngebiet-schule' },
+    'wohngebiet-spielplatz': null, 'wohngebiet-turnhalle': { traufe: 0.80, first: 0.97, seite: 'wohngebiet-turnhalle', lage: 'laengs', lang: 0.5, dach: 'blech' },
+    // Garage/Nebengebäude (Lückenfüller im Wohngebiet, reiheBauen): Traufseite zur Straße, Giebel an den Enden
+    'wohngebiet-garage': { traufe: 0.66, first: 1, lage: 'giebel', putz: '#e3dccd', dach: 'ziegel', tiefe: 6 },
+  };
+  // Seitenansichten (bilder/hausseite, am Bild gemessen 29.10.2026): wl/wr = Wandkanten (Anteil der Bildbreite, ohne Fallrohr/Überstand),
+  // traufe/first = Traufe/First (Anteil der Bildhöhe von unten), dach 'flach' = Giebel liegt in der Wandebene, 'tief' = Dachteil des Bildes
+  // läuft nach hinten (Walm, Traufseite), vorn = Bildkante zur Straße, ohneDach = Bild endet an der Traufe (Turnhalle: Pultdach im Bild,
+  // Vorderansicht flaches Satteldach → Dach aus dem Code mit Textur dach).
+  const SEITE = {
+    'stadt-1': { wl: 0.07, wr: 0.90, traufe: 0.635, first: 0.98, dach: 'flach' },
+    'stadt-2': { wl: 0.06, wr: 0.91, traufe: 0.635, first: 0.99, dach: 'flach' },
+    'stadt-3': { wl: 0.13, wr: 0.91, traufe: 0.665, first: 0.99, dach: 'flach', vorn: 'r' },   // Erker links → nach hinten
+    'stadt-4': { wl: 0.07, wr: 0.92, traufe: 0.775, first: 0.98, dach: 'tief' },
+    'stadt-cafe': { wl: 0.05, wr: 0.94, traufe: 0.655, first: 0.97, dach: 'flach' },
+    'stadt-haltestelle': { wl: 0.05, wr: 0.94, traufe: 0.655, first: 0.95, dach: 'flach' },
+    'stadt-rathaus': { wl: 0.04, wr: 0.95, traufe: 0.665, first: 0.94, dach: 'tief' },
+    'wohngebiet-bauernhaus': { wl: 0.09, wr: 0.90, traufe: 0.66, first: 0.92, dach: 'tief' },
+    'wohngebiet-doppelhaus': { wl: 0.07, wr: 0.93, traufe: 0.555, first: 1, dach: 'flach' },
+    'wohngebiet-efh': { wl: 0.05, wr: 0.94, traufe: 0.67, first: 0.93, dach: 'tief' },
+    'wohngebiet-kindergarten': { wl: 0.04, wr: 0.955, traufe: 0.66, first: 1, dach: 'tief' },
+    'wohngebiet-reihenhaus': { wl: 0.07, wr: 0.93, traufe: 0.60, first: 1, dach: 'flach' },
+    'wohngebiet-schule': { wl: 0.04, wr: 0.955, traufe: 0.73, first: 0.99, dach: 'tief' },
+    'wohngebiet-turnhalle': { wl: 0.0, wr: 0.97, traufe: 1, first: 1, ohneDach: true, vorn: 'r' },
+  };
+  const HAUS_TIEFE = 10;   // Haustiefe der Code-Körper (m)
+  const DACH_KANTE = { biber: '#6e3326', ziegel: '#5a3424', schiefer: '#33363b', blech: '#55585c' };
+  // Hilfsbilder (je einmal erzeugt): gespiegelt, Brandwand-Fassung, eingefärbter Putz, gekachelte Dachfläche
+  const spiegelCache = new WeakMap(), brandCache = new WeakMap(), putzCache = new Map(), dachCache = new Map();
+  function gespiegelt(img) {
+    let c = spiegelCache.get(img);
+    if (c) return c;
+    c = document.createElement('canvas'); c.width = img.naturalWidth || img.width; c.height = img.naturalHeight || img.height;
+    const x = c.getContext('2d'); x.translate(c.width, 0); x.scale(-1, 1); x.drawImage(img, 0, 0);
+    spiegelCache.set(img, c); return c;
+  }
+  // eingefärbter Putz (Textur putz-hell × Farbe × Helligkeit f) als Muster
+  function putzMuster(farbe, f) {
+    const k = farbe + '@' + f.toFixed(2);
+    let p = putzCache.get(k);
+    if (p) return p;
+    const tex = BI.bild && BI.bild('textur/putz-hell');
+    if (!tex) return null;
+    const c = document.createElement('canvas'); c.width = tex.naturalWidth || tex.width; c.height = tex.naturalHeight || tex.height;
+    const x = c.getContext('2d'); x.drawImage(tex, 0, 0);
+    const [r, gg, b] = hexRgb(farbe), k8 = v => Math.round(Math.min(255, v * f * 1.08));
+    x.globalCompositeOperation = 'multiply'; x.fillStyle = `rgb(${k8(r)},${k8(gg)},${k8(b)})`; x.fillRect(0, 0, c.width, c.height);
+    p = { c, muster: g.createPattern(c, 'repeat') };
+    putzCache.set(k, p); return p;
+  }
+  // aktuellen Pfad mit Putz füllen, Kachel = 3 m breit in Entfernung z
+  function putzFuellen(farbe, f, z, x0, y0) {
+    const p = putzMuster(farbe, f);
+    if (!p || !p.muster || !p.muster.setTransform) { g.fillStyle = abdunkeln(farbe, f); g.fill(); return; }
+    const s = mpx(z) * 3 / p.c.width;
+    p.muster.setTransform(new DOMMatrix([s, 0, 0, s, x0, y0]));
+    g.fillStyle = p.muster; g.fill();
+  }
+  // Dachfläche: 8 Kacheln breit, 4 hoch (unten mit Traufkante/Rinne; Biberschwanz dann ca. 0,25 m), abgedunkelt mit f
+  function dachBild(dach, f) {
+    const k = dach + '@' + f.toFixed(2);
+    let c = dachCache.get(k);
+    if (c) return c;
+    const tex = BI.bild && BI.bild('textur/dach-' + dach);
+    if (!tex) return null;
+    const tw = tex.naturalWidth || tex.width, th = tex.naturalHeight || tex.height, w = 96, h = Math.round(w * th / tw), ohne = 0.86, ho = Math.round(h * ohne);   // unten 14 % = Rinne
+    c = document.createElement('canvas'); c.width = 8 * w; c.height = h + 3 * ho;
+    const x = c.getContext('2d');
+    for (let i = 0; i < 8; i++) {
+      x.drawImage(tex, i * w, c.height - h, w, h);
+      for (let j = 0; j < 3; j++) x.drawImage(tex, 0, 0, tw, th * ohne, i * w, c.height - h - (j + 1) * ho, w, ho + 1);
+    }
+    x.globalCompositeOperation = 'source-atop'; x.fillStyle = `rgba(4,6,12,${(1 - f).toFixed(2)})`; x.fillRect(0, 0, c.width, c.height);
+    dachCache.set(k, c); return c;
+  }
+  // mittlere Putzfarbe der Wand einer Seitenansicht (Median im Wandbereich unter der Traufe, jeder 3. Punkt) – einmal je Bild
+  const wandCache = new WeakMap();
+  function wandMittel(img, S) {
+    let m = wandCache.get(img);
+    if (m) return m;
+    m = [200, 190, 170];
+    try {
+      const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height, c = document.createElement('canvas'); c.width = w; c.height = h;
+      const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0);
+      const d = x.getImageData(0, 0, w, h).data, y0 = Math.round((1 - S.traufe) * h + 0.1 * h), y1 = Math.round(h * 0.85);
+      const werte = [[], [], []];
+      for (let y = y0; y < y1; y += 3) for (let i = Math.round(S.wl * w) + 4; i < S.wr * w - 4; i += 3) { const k = (y * w + i) * 4; if (d[k + 3] > 200) for (let j = 0; j < 3; j++) werte[j].push(d[k + j]); }
+      if (werte[0].length) m = werte.map(l => { l.sort((p, q) => p - q); return l[l.length >> 1]; });   // Median: Fenster stören nicht
+    } catch (e) { /* Bild nicht lesbar */ }
+    wandCache.set(img, m); return m;
+  }
+  // Seitenansicht eines anderen Hauses umfärben (Putz → farbe; Fenster, Gesimse, Dach bleiben): Punkte nahe der Putzfarbe werden um den
+  // Farbabstand verschoben (voll bis 30, weich bis 120 Abstand); nachts Zielfarbe wie die Nachtfassung (× 0,2/0,22/0,3) – einmal je Bild und Farbe
+  const umfCache = new WeakMap();
+  function umgefaerbt(img, S, farbe, nacht) {
+    let mp = umfCache.get(img);
+    if (!mp) umfCache.set(img, mp = new Map());
+    let c = mp.get(farbe);
+    if (c) return c;
+    c = img;
+    try {
+      const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height, cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+      const x = cv.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0);
+      const bild = x.getImageData(0, 0, w, h), d = bild.data, m = wandMittel(img, S), zu = hexRgb(farbe).map((v, j) => (nacht ? v * [0.2, 0.22, 0.3][j] : v));
+      const dv = [zu[0] - m[0], zu[1] - m[1], zu[2] - m[2]];
+      for (let k = 0; k < d.length; k += 4) {
+        if (d[k + 3] < 20) continue;
+        const ab = Math.abs(d[k] - m[0]) + Math.abs(d[k + 1] - m[1]) + Math.abs(d[k + 2] - m[2]), wt = klemm(1 - (ab - 30) / 90, 0, 1);
+        if (wt > 0) { d[k] += wt * dv[0]; d[k + 1] += wt * dv[1]; d[k + 2] += wt * dv[2]; }
+      }
+      x.putImageData(bild, 0, 0); c = cv;
+    } catch (e) { /* Bild nicht lesbar: unverändert */ }
+    mp.set(farbe, c); return c;
+  }
+  // Seitenansicht als Brandwand: Wand unter der Traufe = Putz in der Mittelfarbe der Ansicht (keine Fenster), Giebel/Dach aus dem Bild
+  function brandFassung(img, S, farbe) {
+    let c = brandCache.get(img);
+    if (c) return c;
+    const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height, p = putzMuster(farbe, 1);
+    if (!p) return img;
+    c = document.createElement('canvas'); c.width = w; c.height = h;
+    const x = c.getContext('2d'); x.drawImage(img, 0, 0);
+    const e = Math.round((1 - S.traufe) * h), m = x.createPattern(p.c, 'repeat'), s = w * 0.35 / p.c.width;
+    if (m.setTransform) m.setTransform(new DOMMatrix([s, 0, 0, s, 0, 0]));
+    x.globalCompositeOperation = 'source-atop'; x.fillStyle = m;
+    x.fillRect(Math.round(S.wl * w) + 2, e + 2, Math.round((S.wr - S.wl) * w) - 4, Math.round(h * 0.93) - e);
+    brandCache.set(img, c); return c;
+  }
+  // Bildstück (Spalten sx0..sx1, Zeilen sy0..sy1 des Originals) zwischen den Weltpunkten X0 (Spalte sx0) und X1 (Spalte sx1) in
+  // Entfernung z zeichnen; liegt X1 auf dem Bildschirm links von X0, kommt die gespiegelte Fassung
+  function quer(img, sx0, sx1, sy0, sy1, X0, X1, z, yo, yu) {
+    const a = xs(X0, z), b = xs(X1, z), iw = img.naturalWidth || img.width;
+    if (Math.max(a, b) < -2 || Math.min(a, b) > L.B + 2 || yu - yo < 0.3) return;
+    if (a <= b) g.drawImage(img, sx0, sy0, sx1 - sx0, sy1 - sy0, a - 0.3, yo, b - a + 0.6, yu - yo);
+    else g.drawImage(gespiegelt(img), iw - sx1, sy0, sx1 - sx0, sy1 - sy0, b - 0.3, yo, a - b + 0.6, yu - yo);
+  }
+  // Dachfläche nach hinten in waagerechten Streifen: Bildzeilen syE (Traufe, v = 0) bis syF (v = 1); je v Höhe h0→h1,
+  // Entfernung z0→z1, Weltbreite xl0..xr0 (v = 0) nach xl1..xr1 (v = 1); Spalten sx0..sx1 liegen auf xl..xr
+  function dachStreifen(img, sx0, sx1, syE, syF, xl0, xr0, xl1, xr1, h0, h1, z0, z1) {
+    const yE = ys(h0, z0), yF = ys(h1, z1);
+    if (yE - yF < 0.5) return;
+    const n = klemm(Math.ceil((yE - yF) / 9), 1, W.einfach ? 2 : z0 > 40 ? 3 : 8);   // Bildrate: höchstens 8 Streifen, in der Ferne 3
+    for (let i = 0; i < n; i++) {
+      const v0 = i / n, v1 = (i + 1) / n, vm = (v0 + v1) / 2, zm = z0 + (z1 - z0) * vm;
+      const yu = ys(h0 + (h1 - h0) * v0, z0 + (z1 - z0) * v0), yo = ys(h0 + (h1 - h0) * v1, z0 + (z1 - z0) * v1);
+      const s0 = syE + (syF - syE) * v1, s1 = syE + (syF - syE) * v0;
+      quer(img, sx0, sx1, s0, Math.max(s0 + 0.5, s1), xl0 + (xl1 - xl0) * vm, xr0 + (xr1 - xr0) * vm, zm, yo, yu + 0.6);
+    }
+  }
+  function hausecke(o, t, z, nacht, nebel) {
+    if (z < 1.2) return;
+    const G = GEBAEUDE[t.key.slice(t.key.indexOf('/') + 1)];
+    if (G === null) return;
+    const E = Object.assign({ traufe: 0.72 }, G || {}, (o.seite > 0 ? (G || {}).R : (G || {}).L) || {});
+    // ganz nah (wir fahren gerade vorbei) weich ausblenden
+    const nah = klemm((z - 1.6) / 3.4, 0, 1);
+    if (nah <= 0) return;
+    const h = t.hoehe, hT = h * E.traufe, hF = Math.max(hT, h * (E.first || 1)), sg = o.seite;
+    const nass = W.wetter === 'regen' || W.regen, f = nacht ? 0.7 : nass ? 0.6 : W.schnee ? 0.62 : 0.72;   // Schattenseite
+    const brand = !o.wandVorn;   // geschlossene Zeile: nur über dem niedrigeren Nachbarn sichtbar → Brandwand ohne Fenster
+    const unten = ys(0, z), yT = ys(hT, z), m = mpx(z), kante = klemm(m * 0.3, 1, 10);
+    g.globalAlpha = (nebel ? sichtAlpha(z) : 1) * nah;
+    const S = E.seite && SEITE[E.seite];
+    let img0 = S ? BI.bild('hausseite/' + E.seite) : null;
+    if (img0 && nacht) img0 = BI.bild('hausseite/' + E.seite + '-nacht') || bildDunkel(img0, 0.22);
+    let tiefe = E.tiefe || HAUS_TIEFE, xl = o.x, xr = o.x + sg * tiefe;   // Wand von der Straßenkante (xl) nach hinten (xr)
+    if (S && img0) {
+      const iw = img0.naturalWidth || img0.width, ih = img0.naturalHeight || img0.height;
+      if (E.farbe) img0 = umgefaerbt(img0, S, E.farbe, nacht);
+      const wm = wandMittel(img0, S), wf = '#' + wm.map(v => Math.round(klemm(v, 0, 255)).toString(16).padStart(2, '0')).join('');
+      const quelle = bildDunkel(brand ? brandFassung(img0, S, wf) : img0, f);
+      const eRow = (1 - S.traufe) * ih, fRow = (1 - S.first) * ih, wallPx = (S.wr - S.wl) * iw, kW = hT / Math.max(1, ih - eRow);
+      tiefe = E.tiefe || klemm(wallPx * kW, 6, 14);
+      const kx = tiefe / wallPx, uS = S.vorn === 'r' ? S.wr * iw : S.wl * iw, d = S.vorn === 'r' ? -1 : 1;
+      const X = u => o.x + sg * (u - uS) * d * kx;
+      xr = o.x + sg * tiefe;
+      quer(quelle, 0, iw, eRow, ih, X(0), X(iw), z, yT, unten);
+      if (!S.ohneDach && eRow > 2) {
+        const kR = (hF - hT) / Math.max(1, eRow - fRow), hOben = hT + eRow * kR;   // Zeilen über dem First (Kamin) im selben Maßstab
+        if (S.dach === 'flach' || W.einfach || z > 70) quer(quelle, 0, iw, 0, eRow + 0.5, X(0), X(iw), z, ys(hOben, z), yT + 0.5);
+        else {
+          const rueck = E.lage === 'laengs' ? Math.min(9, t.laenge * (E.lang || 0.45) / 2) : tiefe * 0.45, vO = eRow / Math.max(1, eRow - fRow);
+          dachStreifen(quelle, 0, iw, eRow, 0, X(0), X(iw), X(0), X(iw), hT, hOben, z, z + rueck * vO);
+        }
+      }
+    } else {
+      // Code-Körper: Wand aus eingefärbtem Putz
+      const a = xs(xl, z), b = xs(xr, z), x0 = Math.min(a, b), w = Math.abs(b - a);
+      if (w < 2 || x0 > L.B + 2 || x0 + w < -2) { g.globalAlpha = 1; return; }
+      g.beginPath(); g.rect(x0 - 0.3, yT, w + 0.6, unten - yT); putzFuellen(E.putz || t.farbe || '#cbbca6', nacht ? 0.2 : f * 1.05, z, a, yT);
+      g.fillStyle = 'rgba(0,0,0,.16)'; g.fillRect(x0 - 0.3, ys(0.5, z), w + 0.6, unten - ys(0.5, z));   // Sockel
+      if (E.mauer) { g.fillStyle = nacht ? '#2a2a28' : '#9a9384'; g.fillRect(x0 - 0.3, yT - kante * 0.4, w + 0.6, kante * 0.9); }   // Mauerabdeckung
+    }
+    // Dach aus dem Code (Code-Körper, Turnhalle): Giebel, Walm, Traufseite, Flachdach
+    if (!(S && img0) || S.ohneDach) {
+      const lage = E.lage || 'giebel', dach = E.dach || 'biber', kf = nacht ? 0.25 : f * 1.15, rand = 0.35;
+      const xm = (xl + xr) / 2, yF = ys(hF, z), a = xs(xl, z), b = xs(xr, z);
+      const dbild = lage === 'laengs' || lage === 'walm' ? dachBild(dach, kf) : null;
+      if (lage === 'giebel' && hF > hT + 0.3) {
+        g.beginPath(); g.moveTo(a, yT + 0.5); g.lineTo(xs(xm, z), yF); g.lineTo(b, yT + 0.5); g.closePath();
+        putzFuellen(E.putz || t.farbe || '#cbbca6', nacht ? 0.2 : f * 1.05, z, a, yT);
+        g.strokeStyle = nacht ? '#141518' : abdunkeln(DACH_KANTE[dach] || '#6e3326', Math.min(1, f * 1.2)); g.lineWidth = kante * 1.3; g.lineJoin = 'round';
+        g.beginPath(); g.moveTo(xs(xl - sg * rand, z), ys(hT - 0.25, z)); g.lineTo(xs(xm, z), ys(hF + 0.12, z)); g.lineTo(xs(xr + sg * rand, z), ys(hT - 0.25, z)); g.stroke();
+      } else if (dbild && hF > hT + 0.3) {
+        const dw = dbild.width, dh = dbild.height, z0 = Math.max(1.05, z - 0.4);
+        if (lage === 'laengs') {
+          const rueck = Math.min(9, t.laenge * (E.lang || 0.45) / 2);
+          dachStreifen(dbild, 0, dw, dh, 0, xl - sg * rand, xr + sg * rand, xl - sg * rand, xr + sg * rand, hT - 0.15, hF, z0, z + rueck);
+        } else {   // Walm: Fläche verjüngt sich zum First
+          dachStreifen(dbild, 0, dw, dh, 0, xl - sg * rand, xr + sg * rand, xm - sg * 0.6, xm + sg * 0.6, hT - 0.15, hF, z0, z + tiefe * 0.45);
+        }
+      } else if (lage === 'flach' && !E.mauer) {
+        g.fillStyle = nacht ? '#1a1b1e' : abdunkeln(E.putz || '#cfcfcf', f * 0.8); g.fillRect(Math.min(a, b) - 0.3, yT - kante * 0.3, Math.abs(b - a) + 0.6, kante * 1.1);   // Attika
+      }
+    }
+    if (!W.einfach) {
+      // Traufschatten unter dem Dachüberstand und leichter Lichtsaum an der Hauskante zur Straße (tags)
+      const a = xs(xl, z), b = xs(xr, z);
+      if (!E.mauer && E.lage !== 'flach') { g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(Math.min(a, b) - 0.3, yT, Math.abs(b - a) + 0.6, Math.max(1, m * 0.35)); }
+      if (!nacht) { g.fillStyle = 'rgba(255,255,255,.10)'; g.fillRect(a - 0.5, yT, 1, unten - yT); }
+    }
+    g.globalAlpha = 1;
+  }
   function fassade(o, z) {
     const t = o.teil, z1 = Math.max(1.0, z), z2 = Math.min(zFern, z + o.laenge);
     if (z2 <= z1 + 0.05) return;
@@ -731,6 +992,10 @@
     else if (W.schnee) img = bildDunkel(img0, 0.88);
     const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
     const p0 = o.pos - t.pos, nebel = W.wetter === 'nebel';
+    // Hausecke zuerst (Vergleich Fable 29.10.2026): an jedem vorderen Ende, das herausragen kann (Lücke, Schnitt an Querstraße,
+    // höher als der Nachbar davor) – die nähere Fassade überdeckt, was verdeckt wäre; so bleibt die Brandwand über niedrigeren
+    // Nachbarn stehen und keine Scheibe steht frei. In geschlossener Zeile hinter einem gleich hohen Nachbarn entfällt sie (Zeichenzeit).
+    if (!t.rand && (o.wandVorn || t.hoehe > (t.vorHoehe || 0) + 0.3)) hausecke(o, t, z, nacht, nebel);
     const xA = xs(o.x, z1), xB = xs(o.x, z2);
     const fein = W.einfach ? 10 : 4.5;   // Streifenbreite in px (Bildrate: 4× gedrosselte CPU 42 → einfach 48 Bilder/s)
     const n = Math.max(1, Math.min(W.einfach ? 40 : 150, Math.ceil(Math.abs(xA - xB) / fein)));
@@ -749,17 +1014,8 @@
       Xa = Xb; za = zb;
     }
     if (nebel) g.globalAlpha = 1;
-    // Seitenwand am vorderen Ende (sichtbar in Fugen, Einfahrten, an Querstraßen): Mittelfarbe der Fassade, etwas dunkler, mit Dachschräge
-    if (o.wandVorn && z > 1.2) {
-      // Hausecke statt Pappwand (Phase-3-Korrektur): Seitenfassade aus einem Stück desselben Bildes, im Schatten, mit Kante und Sockel
-      const tiefe = o.seite * Math.min(9, t.laenge * 0.6), a = xs(o.x, z), b = xs(o.x + tiefe, z), oben = ys(t.hoehe, z), unten = ys(0, z);
-      if (nebel) g.globalAlpha = sichtAlpha(z);
-      const frac = Math.min(0.45, Math.abs(tiefe) / t.laenge);
-      // Bildstück vom anderen Ende der Fassade (andere Fenster, gleiche Höhe und Dachlinie), abgedunkelt nur im Bild (Dach/Himmel bleiben frei)
-      g.drawImage(bildDunkel(img, nacht ? 0.8 : 0.66), o.seite > 0 ? 0 : (1 - frac) * iw, 0, frac * iw, ih, Math.min(a, b) - 0.3, oben, Math.abs(b - a) + 0.6, unten - oben);
-      g.fillStyle = 'rgba(0,0,0,.2)'; querFlaeche(o.x, o.x + tiefe, z, 0, 0.45); g.fill();   // Sockel
-      if (nebel) g.globalAlpha = 1;
-    }
+    // Fußschatten auf dem Gehweg entlang der Zeile (Vergleich Fable 29.10.2026): das Haus steht auf dem Boden statt davor zu schweben
+    if (!t.rand && !W.einfach && !nacht && z1 < 80) quadBoden(Math.min(o.x, o.x - o.seite * 0.7), Math.max(o.x, o.x - o.seite * 0.7), z1, z2, 'rgba(0,0,0,.13)');
   }
   // Brücke quer über die Autobahn (Bogen Autobahn 1): Ebene quer zur Fahrtrichtung, Öffnung mittig über beiden Fahrbahnen
   function bruecke(o, z) {
@@ -1053,7 +1309,7 @@
   }
   function ball(o, z) {
     if (z < 1) return;
-    const m = mpx(z), x = xs(o.x, z), r = 0.12 * m, y = ys(0, z) - r;
+    const m = mpx(z), x = xs(o.x, z), r = (o.r || 0.12) * m, y = ys(0, z) - r;   // o.r: Einführung größer (MZ, 29.10.2026)
     g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(x, y + r, r, r * 0.25, 0, 0, P2); g.fill();
     g.fillStyle = W.wetter === 'nacht' ? '#401010' : '#d8352a'; g.beginPath(); g.arc(x, y, r, 0, P2); g.fill();
     g.fillStyle = '#f4f1ea'; g.beginPath(); g.arc(x, y, r, o.dreh || 0, (o.dreh || 0) + 1.2); g.lineTo(x, y); g.fill();

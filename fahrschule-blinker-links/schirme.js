@@ -78,7 +78,6 @@
         <div class="bl-lehrer"><div class="bl-figur">${fahrlehrerSvg('freut')}</div><div class="bl-blase">${esc(o.frage)}</div></div>
         <div class="bl-gross"><svg class="platte" viewBox="0 0 335 158" preserveAspectRatio="none" aria-hidden="true"><use href="#grossschild"/></svg>
           <h1 class="bl-band">${esc(D.TEXTE.titel)}</h1>
-          <svg class="bl-pfeil" viewBox="-1 -1 36 28" aria-hidden="true"><path d="${PFEIL}" fill="url(#og)" stroke="url(#og)" stroke-width="1.6" stroke-linejoin="round"/></svg>
           <p class="bl-anl"></p></div>
       </div><div class="bl-sp2">
         <div class="bl-pfosten" aria-hidden="true"></div>
@@ -255,7 +254,8 @@
     const bw = [0, 1, 2, 3, 4].map(breite);
     const seite = Math.max(bw[1], bw[4]), unten = Math.max(bw[2], bw[3]);
     const sin72 = Math.sin(72 * Math.PI / 180), sin36 = Math.sin(36 * Math.PI / 180);
-    let r = Math.min(innerHeight < 880 ? 52 : 60, (W / 2 - 10 - seite) / sin72, (W / 2 - 12 - unten) / sin36);
+    let r = Math.min(innerHeight < 640 ? 36 : innerHeight < 780 ? 42 : innerHeight < 880 ? 52 : 60,   // 29.10.2026: kleiner auf niedrigen Hochformaten (ohne Scrollen)
+       (W / 2 - 10 - seite) / sin72, (W / 2 - 12 - unten) / sin36);
     r = Math.max(36, Math.floor(r));
     const cx = W / 2, cy = Math.round(fs + 8 + r);
     const w = i => (-90 + 72 * i) * Math.PI / 180;
@@ -330,7 +330,7 @@
   function titel(t, unter, dauer, fertig) {
     einbl.className = 'bl-einbl titel';
     einbl.innerHTML = `<div class="bl-titelschild"><svg class="platte" viewBox="0 0 300 62" preserveAspectRatio="none" aria-hidden="true"><path d="M6 31 30 3.5Q32 1 35.5 1H292q7 0 7 7v46q0 7-7 7H35.5Q32 61 30 58.5Z" fill="#e9ece9"/><path d="M10.5 31 32.6 6.2Q34 4.6 36.4 4.6H290.4q4.9 0 4.9 4.9v43q0 4.9-4.9 4.9H36.4Q34 57.4 32.6 55.8Z" fill="url(#blech)"/></svg>
-      <span class="inhalt"><svg class="bl-pfeil" viewBox="-1 -1 36 28" aria-hidden="true"><path d="${PFEIL}" fill="url(#og)" stroke="url(#og)" stroke-width="1.6" stroke-linejoin="round"/></svg><b>${esc(t)}</b></span></div><p>${esc(unter)}</p>`;
+      <span class="inhalt"><b>${esc(t)}</b></span></div><p>${esc(unter)}</p>`;
     zeigeEinbl(dauer, null, fertig);
   }
   function karte(t, unter, dauer, beiDunkel, fertig) {

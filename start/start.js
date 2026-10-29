@@ -32,15 +32,19 @@
   if (statTest) {
     const [f, k, d, q] = statTest.split(',').map(Number);
     fahrten = f || 0; karten = k || 0; doppel = d || 0; schulter = isNaN(q) ? null : q;
-    s = Object.assign({}, s, { abgeschlossen: { fahrstunde: 1, uebung: 1, pruefung: 1 } });
+    s = Object.assign({}, s, { abgeschlossen: { fahrstunde: 1, uebung: 1, pruefung: 1 }, frei: { uebung: true, pruefung: true } });   // frei: seit Regel 550 nötig
   }
   const gesamt = Math.max(0, ...bests.map(b => b || 0));
   $('#statFahrten').textContent = fahrten > 0 ? B.zahl(fahrten) : '–';
   $('#statKarten').textContent = B.zahl(karten);
   $('#statKartenBalken').style.width = Math.min(100, karten) + '%';
-  $('#lcd').innerHTML = fahrten > 0
+  // Anzeigezeile nur nach Fahrten (MZ, 29.10.2026: „Bereit für die erste Fahrt“ entfällt); ohne Zeile sitzt der Tacho mittig (start.css .kombi.ohne-lcd)
+  const mitLcd = fahrten > 0;
+  $('#lcd').hidden = !mitLcd;
+  $('#kombi').classList.toggle('ohne-lcd', !mitLcd);
+  $('#lcd').innerHTML = mitLcd
     ? `<span>Doppelbremse</span><b>${B.zahl(doppel)}×</b><span>–</span><span>Schulterblick</span><b>${schulter == null ? '–' : schulter + ' %'}</b>`
-    : '<span>Bereit für die erste Fahrt</span>';
+    : '';
   $('#fuss').innerHTML = B.fussHtml();
 
   // ---------- Tacho: Skala 0–1.000, Zeiger auf dem höchsten Bestwert (Intro lässt ihn von 0 hochschwingen) ----------

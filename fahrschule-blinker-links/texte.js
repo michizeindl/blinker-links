@@ -2981,7 +2981,7 @@ window.BL_TEXTE = {
    },
    {
     "id": "SP05",
-    "text": "Hände auf neun und drei Uhr, Blick nach vorn. Los geht es.",
+    "text": "Hände auf neun und drei Uhr, Blick nach vorn. Los geht's.",
     "mimik": "neutral"
    },
    {
@@ -3332,7 +3332,7 @@ window.BL_TEXTE = {
    "Kurz": "Prüfungsfahrt"
   },
   "ANLEITUNG_FAHRSTUNDE": {
-   "Text": "Zehn Situationen quer durch Musterstadt. Tippe jede Gefahr an, sobald du sie siehst – Pfeile zeigen dir Spiegel, Blinker und Schulterblick. Drei Doppelbremsen beenden die Fahrt."
+   "Text": "Zehn Situationen in Musterstadt. Tippe jede Gefahr an, sobald du sie siehst. Pfeile zeigen dir Spiegel, Blinker und Schulterblick. Drei Doppelbremsen beenden die Fahrt."
   },
   "ANLEITUNG_UEBUNGSFAHRT": {
    "Text": "Jetzt ohne Pfeile. Achte auf Vorzeichen – wer eine Gefahr früh ahnt, bekommt einen Bonus. Bei der dritten Doppelbremse ist die Fahrt vorbei."
@@ -3347,7 +3347,7 @@ window.BL_TEXTE = {
    "Text": "Gefahren ahnen statt bremsen"
   },
   "UNTERZEILE_3": {
-   "Text": "Zehn Situationen quer durch Musterstadt"
+   "Text": "Zehn Situationen in Musterstadt"
   },
   "UNTERZEILE_4": {
    "Text": "Von der Fahrstunde zur Prüfungsfahrt"
@@ -3567,7 +3567,7 @@ window.BL_TEXTE = {
   "H043": "Lenkrad antippen",
   "H044": "Doppelbremse",
   "H045": "Dreimal ist Schluss",
-  "H046": "Los geht es"
+  "H046": "Los geht's"
  },
  "tipps": {
   "doppelbremse": [
@@ -3637,7 +3637,7 @@ window.BL_TEXTE = {
   "Spiegel, Blinker, Schulterblick – sitzt alles?"
  ],
  "anleitung": {
-  "fahrstunde": "Zehn Situationen quer durch Musterstadt. Tippe jede Gefahr an, sobald du sie siehst – Pfeile zeigen dir Spiegel, Blinker und Schulterblick. Drei Doppelbremsen beenden die Fahrt.",
+  "fahrstunde": "Zehn Situationen in Musterstadt. Tippe jede Gefahr an, sobald du sie siehst. Pfeile zeigen dir Spiegel, Blinker und Schulterblick. Drei Doppelbremsen beenden die Fahrt.",
   "uebung": "Jetzt ohne Pfeile. Achte auf Vorzeichen – wer eine Gefahr früh ahnt, bekommt einen Bonus. Bei der dritten Doppelbremse ist die Fahrt vorbei.",
   "pruefung": "Keine Hilfen, mehr Verkehr, der Prüfer fährt mit. Fahr ruhig und vorausschauend – bei der dritten Doppelbremse ist die Prüfung vorbei."
  },

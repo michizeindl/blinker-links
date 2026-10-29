@@ -26,7 +26,7 @@ body {
 
 /* ---------- oben: Himmel, Logo, Titel ---------- */
 .oben {
-  position: relative; z-index: 2; flex: none; padding-bottom: 10px;
+  position: relative; z-index: 2; flex: none; padding-bottom: 16px;
   background: var(--fein), linear-gradient(#ecebe7, #dddbd5); background-size: 180px, auto;
 }
 .kopf {
@@ -46,7 +46,7 @@ body {
 .ton:hover { transform: scale(1.08); }
 .ton:active { transform: scale(.92); }
 
-.titelzeile { display: flex; justify-content: center; margin-top: 2px; font-weight: inherit; }
+.titelzeile { display: flex; justify-content: center; margin-top: 4px; font-weight: inherit; }
 .schild {
   position: relative; display: block; width: min(300px, 84vw); height: 62px;
   filter: drop-shadow(0 3px 3px rgba(0,0,0,.28)) drop-shadow(0 1px 0 rgba(0,0,0,.25));
@@ -56,7 +56,7 @@ body {
 .schild .inhalt { position: absolute; left: 12.5%; right: 5%; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; gap: 10px; }
 .schild .pfeil { width: 30px; height: 23px; flex: none; overflow: visible; filter: drop-shadow(0 1px 0 rgba(0,0,0,.25)); }
 .schild .name { font: italic 800 clamp(27px, 8.8vw, 33px)/1 'Kanit', sans-serif; letter-spacing: -.4px; color: #fff; text-shadow: 0 1px 0 rgba(0,0,0,.18); white-space: nowrap; }
-.slogan { text-align: center; font: 400 12.5px 'Kanit', sans-serif; letter-spacing: .3px; color: #66665f; margin-top: 6px; }
+/* Slogan unter dem Schild entfernt (MZ, 29.10.2026) – Titel steht dafür mit gleichem Luftraum oben und unten */
 
 /* ---------- Blick durch die Scheibe ---------- */
 .scheibe-rahmen {
@@ -80,12 +80,17 @@ body {
   content: ""; position: absolute; left: 10px; right: 10px; top: 9px; height: 60px; pointer-events: none;
   border-top: 1.6px dashed color-mix(in srgb, var(--gruen), #fff 25%); opacity: .75; border-radius: 50% 50% 0 0 / 34px 34px 0 0;
 }
+/* Kombi-Instrument (MZ, 29.10.2026): Tacho und Zahlen mittig. Mit Anzeigezeile (nach Fahrten) oben/unten je 7 px, ohne Zeile
+   (.ohne-lcd, vor der ersten Fahrt) ist das Instrument flacher und der Tacho sitzt mit je 14 px Luft in der Mitte.
+   Fahrten/Karten: senkrecht um die Tacho-Mitte, waagerecht mittig zwischen Rand und Tacho. */
 .kombi {
+  --oben: 7px;
   position: relative; height: calc(var(--t) + 42px); border-radius: 26px 26px 20px 20px;
   background: radial-gradient(ellipse at 50% 0, #1d2124, #0b0d0e 70%);
   box-shadow: inset 0 10px 18px rgba(0,0,0,.8), inset 0 0 0 1px rgba(255,255,255,.06), 0 1px 0 rgba(255,255,255,.07);
 }
-.tacho { position: absolute; left: 50%; top: 6px; width: var(--t); height: var(--t); margin-left: calc(var(--t) / -2); }
+.kombi.ohne-lcd { --oben: 14px; height: calc(var(--t) + 28px); }
+.tacho { position: absolute; left: 50%; top: var(--oben); width: var(--t); height: var(--t); margin-left: calc(var(--t) / -2); }
 .tacho svg { width: 100%; height: 100%; display: block; overflow: visible; }
 .blink { position: absolute; top: 20px; width: 34px; height: 26px; }
 .blink.l { left: 20px; } .blink.r { right: 20px; }
@@ -93,19 +98,20 @@ body {
 .blink.r svg path { fill: #26302a; }
 .blink.l svg path { fill: #26302a; }
 .blink.l .an { fill: var(--licht); }
-.mini { position: absolute; top: calc(var(--t) * .44); width: 60px; text-align: center; color: #cfd6d2; }
-.mini.l { left: 8px; } .mini.r { right: 8px; }
+.mini { position: absolute; top: calc(var(--oben) + var(--t) / 2 - 22px); width: 60px; text-align: center; color: #cfd6d2; }
+.mini.l { left: max(4px, calc(25% - var(--t) / 4 - 30px)); } .mini.r { right: max(4px, calc(25% - var(--t) / 4 - 30px)); }
 .mini b { display: block; font: 600 21px/1 'Kanit', sans-serif; color: #fff; font-variant-numeric: tabular-nums; }
 .mini span { font: 400 9.5px/1.2 'Kanit', sans-serif; color: #8e9893; letter-spacing: .3px; }
 .mini i { display: block; height: 4px; border-radius: 2px; background: #2b302d; margin: 6px 4px 0; overflow: hidden; }
 .mini i em { display: block; height: 100%; width: 0; background: var(--licht); transition: width 1s ease .6s; }
 .lcd {
-  position: absolute; left: 44px; right: 44px; bottom: 9px; height: 28px; border-radius: 7px; padding: 0 8px;
+  position: absolute; left: 44px; right: 44px; bottom: 7px; height: 28px; border-radius: 7px; padding: 0 8px;
   background: linear-gradient(#0f1513, #09100c); box-shadow: inset 0 0 0 1px rgba(61,220,111,.18);
   display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; overflow: hidden;
   font: 400 10.5px 'Kanit', sans-serif; color: #bfe9cb; letter-spacing: .2px;
 }
 .lcd b { font-weight: 600; color: #fff; }
+.lcd[hidden] { display: none; }
 
 .leuchten { display: flex; gap: 8px; margin-top: 12px; }
 .leuchte {
@@ -125,7 +131,7 @@ body {
 .leuchte.aus span { color: #59605b; } .leuchte.aus b { color: #3f4541; }
 
 .start {
-  display: block; align-self: center; margin: clamp(12px, 2.4vh, 22px) 0 6px; width: clamp(88px, 12.5vh, 108px); aspect-ratio: 1; border-radius: 50%; padding: 7px;
+  display: block; align-self: center; margin: clamp(12px, 2.4vh, 22px) 0 clamp(16px, 2.6vh, 26px);   /* unten mehr Luft zur Mappe (MZ, 29.10.2026) */ width: clamp(88px, 12.5vh, 108px); aspect-ratio: 1; border-radius: 50%; padding: 7px;
   background: conic-gradient(from 200deg, #9aa0a3, #e9ecee, #7d8386, #d7dadc, #8a9093, #f2f4f5, #9aa0a3);
   box-shadow: 0 8px 16px rgba(0,0,0,.6); text-decoration: none; transition: transform .2s ease;
 }
@@ -135,10 +141,26 @@ body {
   box-shadow: inset 0 0 0 2.5px var(--licht), 0 0 14px rgba(61,220,111,.55), inset 0 0 12px rgba(61,220,111,.35);
   animation: startGlimmen 2.6s ease-in-out infinite;
 }
-.start svg { width: 20px; height: 20px; fill: none; stroke: var(--licht); stroke-width: 2.4; stroke-linecap: round; margin-bottom: 2px; }
-.start b { font: 600 18px/1 'Kanit', sans-serif; letter-spacing: .3px; }
+.start svg { width: 18px; height: 18px; fill: none; stroke: var(--licht); stroke-width: 2.4; stroke-linecap: round; margin-bottom: 1px; }
+.start b { font: 600 30px/1 'Kanit', sans-serif; letter-spacing: .5px; margin-bottom: 4px; }   /* „Go“ (MZ, 29.10.2026) */
 .start:hover { transform: scale(1.05); }
 .start:active { transform: scale(.95); }
+/* Leerlauf (MZ, 29.10.2026): alle 2,8s ein kurzer Vibrations-Stoß (ca. 0,4s, 1–1,5 px, höchstens ±0,8°), dazwischen Ruhe.
+   Erst nach dem Intro (html.intro fehlt), ohne Intro nach dem Hereingleiten. Darüberfahren/Fokus/Antippen: Motor still, Knopf wächst bzw. drückt sich.
+   Bewegung reduzieren: keine Vibration, nur das sanfte Aufleuchten (startGlimmen). Keine echte Handy-Vibration. */
+html:not(.intro) .start > span { animation: startGlimmen 2.6s ease-in-out infinite, leerlauf 2.8s linear 1.4s infinite; }
+html:not(.intro) .start:hover > span, html:not(.intro) .start:focus-visible > span, html:not(.intro) .start:active > span { animation: startGlimmen 2.6s ease-in-out infinite; }
+@keyframes leerlauf {
+  0%, 85%, 100% { transform: none; }
+  86.5% { transform: translate(1px, -.5px) rotate(.6deg); }
+  88% { transform: translate(-1px, .5px) rotate(-.7deg); }
+  89.5% { transform: translate(1.5px, 0) rotate(.8deg); }
+  91% { transform: translate(-1.5px, .5px) rotate(-.8deg); }
+  92.5% { transform: translate(1px, -.5px) rotate(.5deg); }
+  94% { transform: translate(-1px, 0) rotate(-.4deg); }
+  95.5% { transform: translate(.5px, .5px) rotate(.2deg); }
+  97% { transform: translate(-.5px, 0) rotate(-.1deg); }
+}
 @keyframes startGlimmen { 0%, 100% { box-shadow: inset 0 0 0 2.5px var(--licht), 0 0 14px rgba(61,220,111,.55), inset 0 0 12px rgba(61,220,111,.35); }
   50% { box-shadow: inset 0 0 0 2.5px var(--licht), 0 0 22px rgba(61,220,111,.75), inset 0 0 16px rgba(61,220,111,.5); } }
 
@@ -152,9 +174,8 @@ body {
 /* ---------- sanftes Erscheinen (gestaffelt) ---------- */
 @keyframes rein { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes einblenden { from { opacity: 0; } to { opacity: 1; } }
-html.ohne-intro .kopf, html.ohne-intro .titelzeile, html.ohne-intro .slogan { animation: rein .55s ease-out both; }
+html.ohne-intro .kopf, html.ohne-intro .titelzeile { animation: rein .55s ease-out both; }
 html.ohne-intro .titelzeile { animation-delay: .08s; }
-html.ohne-intro .slogan { animation-delay: .16s; }
 html.ohne-intro .titelzeile .pfeil { animation: einblenden .8s ease-out .35s both; }
 html.ohne-intro .kombi { animation: rein .6s ease-out .2s both; }
 html.ohne-intro .leuchte { animation: rein .5s ease-out both; }
@@ -166,11 +187,11 @@ html.ohne-intro .fuss { animation: einblenden .6s ease-out .7s both; }
 html.intro body { overflow: hidden; }
 /* Logo und Titel liegen während des Intros über der grünen Fläche (die Fläche liegt über Himmel, Scheibe und Brett) */
 html.intro .oben { z-index: auto; }
-html.intro .kopf, html.intro .titelzeile, html.intro .slogan { position: relative; z-index: 60; }
+html.intro .kopf, html.intro .titelzeile { position: relative; z-index: 60; }
 html.intro .ton { opacity: 0; }
 html.intro-logo-weiss .logo svg { --mf-zeichen: #fff; --mf-schrift: #fff; }
 .logo svg g { transition: fill .5s ease; }
-html.intro .logo, html.intro .titelzeile, html.intro .slogan, html.intro .brett, html.intro .scheibe-rahmen { opacity: 0; }
+html.intro .logo, html.intro .titelzeile, html.intro .brett, html.intro .scheibe-rahmen { opacity: 0; }
 .introbuehne { position: fixed; inset: 0; z-index: 50; pointer-events: auto; cursor: pointer; }
 .introbuehne .flaeche { position: absolute; left: 0; right: 0; top: 0; bottom: 0; }
 .introbuehne .icon { position: absolute; left: 0; top: 0; overflow: visible; }
@@ -195,7 +216,7 @@ html.intro-logo-weiss .schild { filter: drop-shadow(0 0 1.2px rgba(255,255,255,.
   .leuchte { padding: 5px 3px; }
   .leuchte svg { width: 22px; height: 22px; margin-bottom: 1px; }
   .start { grid-column: 2; grid-row: 2; margin: 6px 0 0; width: 76px; }
-  .start b { font-size: 15px; }
+  .start b { font-size: 25px; }
   .fuss { grid-column: 1 / 3; grid-row: 3; align-self: end; padding-top: 4px; font-size: 8.5px; }
 }
 /* mittlere Hochformate (z. B. 360 × 740, 412 × 780 mit Browserleisten, Phase-5-Korrektur): etwas engere Abstände, damit nichts scrollt */
@@ -205,32 +226,31 @@ html.intro-logo-weiss .schild { filter: drop-shadow(0 0 1.2px rgba(255,255,255,.
   .leuchten { margin-top: 9px; }
   .leuchte { padding: 6px 4px 5px; }
   .leuchte svg { width: 26px; height: 26px; margin-bottom: 3px; }
-  .start { width: clamp(84px, 11.5vh, 96px); margin: 10px 0 4px; }
-  .fuss { padding-top: 6px; }
+  .start { width: clamp(84px, 11.5vh, 96px); margin: 10px 0 16px; }
+  .fuss { padding-top: 8px; }
 }
 /* sehr niedrige Hochformate (z. B. 320 × 568): Scheibe schmaler, kleinere Abstände */
 @media (orientation: portrait) and (max-height: 660px) {
   :root { --t: clamp(140px, min(50vw, 25vh), 190px); }
   .kopf { height: 50px; }
-  .scheibe-rahmen { flex-basis: 90px; min-height: 64px; }
+  .scheibe-rahmen { flex-basis: 64px; min-height: 60px; }   /* 29.10.2026: „Go“ ganz sichtbar auf 320 × 568 */
   .leuchten { margin-top: 9px; }
   .leuchte { padding: 6px 3px 5px; }
   .leuchte svg { width: 24px; height: 24px; margin-bottom: 2px; }
-  .start { width: 80px; margin: 10px 0 4px; }
-  .start b { font-size: 15px; }
-  .slogan { margin-top: 3px; }
-  .oben { padding-bottom: 6px; }
+  .start { width: 80px; margin: 10px 0 10px; }
+  .start b { font-size: 25px; }
+  .oben { padding-bottom: 10px; }
   .fuss { padding-top: 6px; }
 }
 /* Bewegung reduzieren (start.js setzt html.ruhig auch bei prefers-reduced-motion): nur weiche Einblendungen, kein Hereingleiten */
-html.ruhig .kopf, html.ruhig .titelzeile, html.ruhig .slogan, html.ruhig .kombi, html.ruhig .leuchte, html.ruhig .start { animation-name: einblenden !important; }
-html.ruhig .start > span { animation: none; }
+html.ruhig .kopf, html.ruhig .titelzeile, html.ruhig .kombi, html.ruhig .leuchte, html.ruhig .start { animation-name: einblenden !important; }
+html.ruhig .start > span { animation: startGlimmen 2.6s ease-in-out infinite !important; }   /* Bewegung reduzieren: nur Aufleuchten, keine Vibration */
 html.ruhig .leuchte, html.ruhig .start, html.ruhig .ton { transition: none; transform: none !important; }
 /* ---------- Führerscheinmappe (Phase 2b) ---------- */
 button.mini { border: 0; padding: 0; background: none; font: inherit; cursor: pointer; border-radius: 10px; transition: transform .2s ease; }
 button.mini:hover { transform: translateY(-1px); } button.mini:active { transform: scale(.95); }
 button.mini:focus-visible, .mappe-knopf:focus-visible, .mappe button:focus-visible { outline: 2px solid var(--licht); outline-offset: 2px; }
-.mappe-knopf { align-self: center; display: flex; align-items: center; gap: 8px; margin: 2px 0 4px; padding: 6px 14px 6px 11px; border-radius: 18px;
+.mappe-knopf { align-self: center; display: flex; align-items: center; gap: 8px; margin: 0 0 2px; padding: 6px 14px 6px 11px; border-radius: 18px;
   border: 1px solid #3a403c; background: linear-gradient(#24282b, #17191b); color: #dfe5e1; font: 400 13px/1 'Kanit', sans-serif; cursor: pointer;
   box-shadow: 0 2px 6px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.07); transition: transform .2s ease, border-color .2s; animation: einblenden .6s ease-out .9s both; }
 .mappe-knopf svg { width: 18px; height: 15px; fill: #2b302d; stroke: var(--licht); stroke-width: 1.3; }

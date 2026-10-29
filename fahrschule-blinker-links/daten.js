@@ -54,7 +54,14 @@
     tempoZiel: 'Geschwindigkeitsanpassung', tempoSanft: 'Fahrzeugbedienung', vorfahrt: 'Verkehrsbeobachtung',
   };
   // Gewicht für die Fehlerliste im Endbild (die drei wichtigsten Fehler der Fahrt)
-  const FEHLERGEWICHT = { doppelbremse: 5, verpasst: 4, schulter: 3, spiegel: 2, blinker: 2.5, lenken: 1, tempo: 2.5, reihenfolge: 1.5, spaet: 1.2, vorfahrt: 3, fehlalarm: 0.6, warn: 2.5, abblenden: 2.5 };
+  const FEHLERGEWICHT = { doppelbremse: 5, verpasst: 4, schulter: 3, spiegel: 2, blinker: 2.5, lenken: 1, tempo: 2.5, reihenfolge: 1.5, spaet: 1.2, vorfahrt: 3, fehlalarm: 0.6, warn: 2.5, abblenden: 2.5,
+    abstand: 4, licht: 4 };
+  // Fehlerart je Situation (29.10.2026, Tipp-Arten „abstand“/„licht“): „Gefahr übersehen“ (verpasst) bzw. „zu schnell“ (tempo) zählt in diesen
+  // Situationen fachlich als Abstands- bzw. Lichtfehler – Fehlertext bleibt, nur die Art (Tipp im Endbild) wechselt.
+  const FEHLERART_SITUATION = {
+    S001: 'abstand', S031: 'abstand', S044: 'abstand', S045: 'abstand', S067: 'abstand', S070: 'abstand', S090: 'abstand',
+    S079: 'licht', S086: 'licht', S093: 'licht',   // S098 (Nebelschlussleuchte aus) nicht: beide Licht-Tipps sagen „Licht an“
+  };
 
   // ---------- Fahrzeuge (Gerüst für spätere Klassen: Roller, Motorrad, Traktor …) ----------
   const FAHRZEUGE = {
@@ -293,5 +300,5 @@
     warten: ['Noch nicht – da kommt noch jemand.'],
   };
 
-  window.BL_DATEN = { FAUST, WETTER, FLAECHE, KREUZ_LAGE, ROUTE, RAND, PUNKTE, STUFEN, GEBIETE, BEREICHE, ZUORDNUNG, FEHLERGEWICHT, FAHRZEUGE, BEWERTUNGEN, TEXTE, ABLAEUFE, KREUZUNGEN, SPRUECHE };
+  window.BL_DATEN = { FAUST, WETTER, FLAECHE, KREUZ_LAGE, ROUTE, RAND, PUNKTE, STUFEN, GEBIETE, BEREICHE, ZUORDNUNG, FEHLERGEWICHT, FEHLERART_SITUATION, FAHRZEUGE, BEWERTUNGEN, TEXTE, ABLAEUFE, KREUZUNGEN, SPRUECHE };
 })();
