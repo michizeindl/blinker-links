@@ -1,0 +1,406 @@
+/* „Blinker links“ – Start-/Endbild Stil 3 „Wegweiser“ (MZ, 28.10.2026), Fahrlehrer, Einblendungen, Hinweise, Kreuzung.
+   Die Schirme des Rahmens sind aus; Anzeige oben (Zum Menü, Spielstand, Ton, Vollbild) kommt weiter vom Rahmen. */
+:root {
+  --gruen: #1E7A3E;
+  --gruen-hell: color-mix(in srgb, var(--gruen), #fff 12%);
+  --gruen-dunkel: color-mix(in srgb, var(--gruen), #000 20%);
+  --gruen-dd: color-mix(in srgb, var(--gruen), #000 50%);
+  --licht: #3ddc6f; --rot: #c8410c;
+  --rauschen: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .16 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+html, body { font-family: 'Kanit', 'Segoe UI', Arial, sans-serif; background: #16181a; }
+#startSchirm, #endSchirm { display: none !important; }
+#anzeige { font-family: 'Kanit', 'Segoe UI', Arial, sans-serif; font-weight: 600; font-size: 15px; }
+#anzeige .links, #anzeige .rechts { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.75), 0 0 8px rgba(0,0,0,.35); }
+stop.hell { stop-color: var(--gruen-hell); } stop.mitte { stop-color: var(--gruen); } stop.dunkel { stop-color: var(--gruen-dunkel); }
+.flaggeFeld { fill: var(--gruen); }
+
+/* ---------- Schirme (Start, Ende) ---------- */
+.bl-schirm {
+  position: fixed; inset: 0; z-index: 20; overflow-y: auto; overflow-x: hidden; color: #1d2420;
+  padding: max(64px, calc(env(safe-area-inset-top, 0px) + 60px)) 16px max(20px, env(safe-area-inset-bottom, 0px));
+  display: flex; justify-content: center; -webkit-overflow-scrolling: touch;
+}
+.bl-schirm[hidden] { display: none; }
+.bl-hg { position: fixed; inset: 0; z-index: -1; background: center bottom / cover no-repeat #8aa1b4; }
+.bl-hg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(rgba(240,246,250,.55), rgba(240,246,250,.08) 30%, rgba(0,0,0,0) 55%, rgba(250,250,247,.25) 78%, rgba(250,250,247,.9)); }
+.bl-logo { position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); top: max(14px, env(safe-area-inset-top, 0px)); height: 30px; z-index: 3; }
+.bl-logo svg, .bl-logo img { height: 30px; width: auto; display: block; }
+.bl-logo svg { --mf-zeichen: var(--gruen); --mf-schrift: var(--gruen); }
+.bl-spalten { width: 100%; max-width: 380px; display: flex; flex-direction: column; position: relative; margin: auto 0; }
+.bl-sp1, .bl-sp2 { position: relative; display: flex; flex-direction: column; }
+
+.bl-lehrer { display: flex; align-items: center; gap: 13px; margin-left: 4px; }
+.bl-figur { width: 60px; height: 60px; flex: none; border-radius: 50%; background: #fff; box-shadow: 0 0 0 3px #fff, 0 0 0 4.5px var(--gruen), 0 4px 10px rgba(0,0,0,.3); overflow: hidden; }
+.bl-figur svg { width: 100%; height: 100%; display: block; }
+.bl-blase {
+  position: relative; background: #fff; color: #141816; font: 600 16.5px/1.2 'Kanit', sans-serif; padding: 10px 15px 11px; border-radius: 14px;
+  box-shadow: 0 3px 10px rgba(0,0,0,.16), 0 0 0 1px rgba(0,0,0,.05); max-width: calc(100% - 76px);
+}
+.bl-blase::before { content: ""; position: absolute; left: -8px; top: 50%; margin-top: -8px; border: 8px solid transparent; border-left: 0; border-right-color: #fff; }
+
+.bl-gross { position: relative; margin-top: 34px; min-height: 150px; filter: drop-shadow(0 4px 5px rgba(0,0,0,.3)) drop-shadow(0 1px 0 rgba(0,0,0,.25)); }
+.bl-gross .platte, .bl-stufe .platte { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.bl-band {
+  position: absolute; left: 54%; top: -20px; z-index: 5; transform: translateX(-50%) rotate(-3deg); white-space: nowrap; margin: 0;
+  font: italic 800 27px/1 'Kanit', sans-serif; letter-spacing: -.2px; color: #1a1d1b; padding: 9px 24px 10px; border-radius: 6px;
+  background: linear-gradient(#ffe24d, #ffd014 55%, #f3c000);
+  box-shadow: 0 5px 12px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.65), inset 0 -2px 0 rgba(150,100,0,.18);
+  animation: bandRein .6s cubic-bezier(.2,1.4,.4,1) .15s both, bandPuls 2.4s ease-in-out 1s infinite;
+}
+.bl-band.still { animation: bandRein .6s ease-out .15s both; background: linear-gradient(#eceeed, #d6dad8); color: #3a403c; }
+@keyframes bandRein { from { opacity: 0; transform: translateX(-50%) rotate(-12deg) scale(.6); } to { opacity: 1; transform: translateX(-50%) rotate(-3deg) scale(1); } }
+@keyframes bandPuls { 0%, 100% { transform: translateX(-50%) rotate(-3deg) scale(1); } 50% { transform: translateX(-50%) rotate(-3deg) scale(1.05); } }
+.bl-pfeil { position: absolute; left: 22px; top: 50%; width: 34px; height: 26px; margin-top: -10px; overflow: visible; }
+.bl-anl { position: relative; margin: 0; padding: 40px 22px 16px 66px; font: 400 14px/1.42 'Kanit', sans-serif; color: rgba(255,255,255,.96); }
+
+.bl-pfosten { position: absolute; right: 52px; top: 0; bottom: -60px; width: 12px; border-radius: 3px; z-index: 0;
+  background: linear-gradient(90deg, #8c9196, #e3e6e8 35%, #b4b8bc 60%, #7a7f84); box-shadow: 2px 0 4px rgba(0,0,0,.25); }
+.bl-sp2 { margin-top: 14px; }
+.bl-stufen { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; padding-right: 28px; }
+.bl-stufe {
+  position: relative; display: block; width: 250px; max-width: calc(100% - 20px); height: 42px; border: 0; padding: 0; background: none; cursor: pointer; font: inherit;
+  filter: drop-shadow(0 3px 4px rgba(0,0,0,.28)); transition: transform .2s ease, filter .2s ease;
+  animation: schildRein .5s ease-out both;
+}
+.bl-stufe:nth-child(2) { animation-delay: .08s; } .bl-stufe:nth-child(3) { animation-delay: .16s; }
+@keyframes schildRein { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: none; } }
+.bl-stufe.an { width: 266px; }
+.bl-stufe:not(.aus):hover { transform: translateX(-4px); }
+.bl-stufe:not(.aus):active { transform: translateX(-2px) scale(.98); }
+.bl-stufe.aus { cursor: default; filter: grayscale(1) opacity(.5) drop-shadow(0 2px 3px rgba(0,0,0,.2)); }
+.bl-stufe .inhalt { position: absolute; left: 30px; right: 14px; top: 0; bottom: 0; display: flex; align-items: center; justify-content: space-between; color: #fff; font: italic 600 16px 'Kanit', sans-serif; }
+.bl-stufe .haken { width: 18px; height: 18px; border-radius: 50%; background: #fff; display: none; align-items: center; justify-content: center; }
+.bl-stufe.an .haken { display: flex; }
+.bl-stufe .haken svg { width: 11px; height: 11px; fill: none; stroke: var(--gruen); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.bl-stufe .schelle { position: absolute; right: -24px; top: 16px; width: 18px; height: 9px; border-radius: 2px; background: linear-gradient(#d3d6d9, #8d9297); box-shadow: 0 1px 1px rgba(0,0,0,.3); }
+.bl-tafel { border-radius: 12px; padding: 10px 14px; background: #fff; box-shadow: 0 4px 8px rgba(0,0,0,.22), inset 0 0 0 2px var(--gruen), inset 0 0 0 4px #fff, inset 0 0 0 5px color-mix(in srgb, var(--gruen), transparent 75%); position: relative; z-index: 1; }
+.bl-bestt { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 14px 28px 0 auto; width: 266px; max-width: calc(100% - 20px); }
+.bl-bestt span, .bl-bestt b { white-space: nowrap; }
+.bl-bestt span { font: 500 10.5px 'Kanit', sans-serif; letter-spacing: 1.2px; text-transform: uppercase; color: #59605b; }
+.bl-bestt b { font: italic 800 24px/1 'Kanit', sans-serif; color: var(--gruen); }
+.bl-bestt b small { font: 500 12.5px 'Kanit', sans-serif; font-style: normal; color: #59605b; margin-left: 2px; }
+.bl-knoepfe { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 9px; margin-top: clamp(18px, 7vh, 80px); }
+.bl-knopf {
+  display: block; text-align: center; font: 600 18px/1 'Kanit', sans-serif; border-radius: 13px; padding: 14px 0; background: var(--gruen); color: #fff; border: 0; cursor: pointer;
+  text-decoration: none; box-shadow: 0 5px 12px color-mix(in srgb, var(--gruen), transparent 65%), inset 0 1px 0 rgba(255,255,255,.18); transition: transform .15s ease, box-shadow .15s ease; width: 100%;
+}
+.bl-knopf.zweit { background: rgba(255,255,255,.85); color: var(--gruen); border: 2px solid var(--gruen); box-shadow: none; padding: 12px 0; }
+.bl-knopf:hover { transform: translateY(-2px); }
+.bl-knopf:active { transform: scale(.97); }
+
+/* Ende */
+.bl-zielwrap { position: relative; margin-top: 12px; }
+.bl-pfosten.kurz { top: auto; bottom: -30px; height: 42px; }
+.bl-pfosten.kurz.l { left: 54px; right: auto; } .bl-pfosten.kurz.r { right: 54px; }
+.bl-ziel { position: relative; z-index: 1; border-radius: 14px; padding: 28px 14px 12px; text-align: center; color: #fff;
+  background: var(--rauschen), linear-gradient(var(--gruen-hell), var(--gruen) 50%, var(--gruen-dunkel)); background-size: 180px, auto;
+  box-shadow: 0 0 0 3px #eef0ee, 0 0 0 4px rgba(0,0,0,.18), 0 8px 14px rgba(0,0,0,.3); animation: schildFall .55s ease-out both; }
+.bl-ziel .bl-band { left: 50%; top: -22px; }
+@keyframes schildFall { from { opacity: 0; transform: translateY(-18px); } to { opacity: 1; transform: none; } }
+.bl-ziel .ort { display: flex; align-items: center; justify-content: center; gap: 9px; font: italic 600 17px 'Kanit', sans-serif; letter-spacing: .2px; opacity: .95; }
+.bl-ziel .ort svg { width: 22px; height: 18px; }
+.bl-ziel .zahl { font: italic 800 60px/0.95 'Kanit', sans-serif; letter-spacing: -1px; margin-top: 4px; text-shadow: 0 2px 0 rgba(0,0,0,.18); font-variant-numeric: tabular-nums; }
+.bl-ziel .von { font: 400 14px 'Kanit', sans-serif; opacity: .9; }
+.bl-ziel.abbruch .von { font-size: 13.5px; line-height: 1.35; margin-top: 4px; }
+.bl-ziel .niete { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: #d6dbd7; box-shadow: 0 .5px 0 rgba(0,0,0,.35); }
+.bl-plakette { display: inline-flex; align-items: center; gap: 7px; padding: 5px 14px 5px 11px; border-radius: 999px; font: 600 15px/1 'Kanit', sans-serif; background: #fff; color: #1d2420; margin-top: 7px; }
+.bl-plakette svg { width: 16px; height: 16px; fill: none; stroke: var(--gruen); stroke-width: 2.2; stroke-linecap: round; }
+.bl-plakette span { font-weight: 400; opacity: .75; font-size: 13px; }
+.bl-unterzeile, .bl-bestzeile, .bl-freigeschaltet { position: relative; z-index: 1; text-align: center; margin: 0; font: 400 13px/1.35 'Kanit', sans-serif; color: #26302a; }
+/* Unterzeile und Bestwert auf einer ruhigen hellen Tafel (wie die Protokoll-Tafel), nicht mehr direkt auf dem Landschaftsfoto */
+.bl-zeilen { margin-top: 28px; padding: 7px 14px 8px; display: flex; flex-direction: column; gap: 3px; animation: rein .5s ease-out .1s both; }
+.bl-zeilen .bl-unterzeile { font-size: 13.5px; color: #1d2420; }
+.bl-bestzeile { font-weight: 500; color: #4a524c; font-size: 12.5px; }
+.bl-bestzeile b { font-weight: 700; color: var(--gruen-dunkel); }
+.bl-bestzeile.neu { color: var(--gruen-dunkel); font-weight: 600; }
+.bl-freigeschaltet { margin-top: 8px; display: inline-block; align-self: center; padding: 4px 12px; border-radius: 999px; background: #ffd014; color: #1a1d1b; font-weight: 600; animation: rein .5s ease-out .6s both; }
+.bl-prot { margin-top: 10px; padding: 10px 12px; animation: schildFall .55s ease-out .15s both; }
+.bl-prot h2.k { font: 600 10.5px 'Kanit', sans-serif; letter-spacing: 1.3px; text-transform: uppercase; color: #7b817c; text-align: center; margin: 0; }
+.bl-netz { display: block; width: 100%; max-width: 360px; height: auto; margin: 4px auto 0; overflow: visible; font-family: 'Kanit', sans-serif; }
+.bl-netzflaeche { animation: netzWachsen .8s ease-out .5s both; }
+@keyframes netzWachsen { from { transform: scale(0); } to { transform: scale(1); } }
+.bl-fehler { border-top: 1px solid #e1e3df; margin-top: 4px; padding-top: 7px; }
+.bl-fehler h3 { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0; font: 600 10.5px 'Kanit', sans-serif; letter-spacing: 1.3px; text-transform: uppercase; color: #7b817c; }
+.bl-fehler h3 b { white-space: nowrap; flex: none; font: 600 12px 'Kanit', sans-serif; letter-spacing: .2px; text-transform: none; padding: 2px 9px; border-radius: 999px; background: #fbe6dc; color: var(--rot); }
+.bl-fehler ul { margin: 0; padding: 0; }
+.bl-fehler li { list-style: none; display: flex; align-items: center; gap: 8px; font: 400 13px/1.25 'Kanit', sans-serif; margin-top: 4px; }
+.bl-fehler li::before { content: ""; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--rot); }
+.bl-fehler li.keine::before { background: var(--gruen); }
+.bl-unten { margin-top: 12px; display: flex; flex-direction: column; gap: 9px; position: relative; z-index: 1; }
+.bl-reihe { display: flex; gap: 9px; }
+.bl-reihe > * { flex: 1; }
+/* beide Schalter gleich gesetzt (MZ, 28.10.2026): normale Stärke, linksbündig, Pfeil rechts fest, gleiche Höhe */
+.bl-schalter { display: flex; align-items: center; justify-content: space-between; gap: 6px; text-align: left; font: 400 13px/1.2 'Kanit', sans-serif; border-radius: 12px; padding: 7px 10px 7px 12px; min-height: 46px;
+  background: #fff; color: var(--gruen-dd); box-shadow: 0 2px 6px rgba(0,0,0,.15), inset 0 0 0 1.5px color-mix(in srgb, var(--gruen), transparent 55%); text-decoration: none; }
+span.bl-schalter { cursor: default; }
+.bl-schalter span { flex: 1; min-width: 0; }
+.bl-schalter svg { flex: none; width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+
+/* gestaffeltes Erscheinen */
+.bl-start .bl-lehrer { animation: rein .5s ease-out both; }
+.bl-start .bl-gross { animation: rein .55s ease-out .05s both; }
+.bl-start .bl-bestt { animation: rein .5s ease-out .3s both; }
+.bl-start .bl-knoepfe, .bl-ende .bl-unten { animation: rein .5s ease-out .4s both; }
+@keyframes rein { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* Querformat (flach): zwei Spalten */
+@media (orientation: landscape) and (max-height: 600px) {
+  .bl-schirm { padding-top: max(54px, calc(env(safe-area-inset-top, 0px) + 50px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .bl-spalten { max-width: 760px; flex-direction: row; gap: 22px; align-items: flex-start; }
+  .bl-sp1, .bl-sp2 { flex: 1; min-width: 0; }
+  .bl-sp2 { margin-top: 0; }
+  .bl-knoepfe { margin-top: 14px; }
+  .bl-gross { margin-top: 26px; }
+  .bl-zeilen { margin-top: 34px; }
+  .bl-prot { margin-top: 0; }
+  .bl-start .bl-pfosten { bottom: -20px; }
+}
+/* sehr niedrige Hochformate (320 × 568/640): enger */
+@media (orientation: portrait) and (max-height: 680px) {
+  .bl-schirm { padding-top: 56px; }
+  .bl-figur { width: 50px; height: 50px; }
+  .bl-blase { font-size: 15px; padding: 8px 12px; }
+  .bl-gross { margin-top: 28px; }
+  .bl-anl { font-size: 13px; padding: 36px 16px 12px 58px; }
+  .bl-knoepfe { margin-top: 16px; }
+  .bl-knopf { padding: 12px 0; font-size: 17px; }
+  .bl-knopf.zweit { padding: 10px 0; }
+  .bl-ziel .zahl { font-size: 54px; }
+}
+@media (max-width: 350px) {
+  .bl-band { font-size: 23px; padding: 8px 18px 9px; }
+  .bl-stufe, .bl-stufe.an, .bl-bestt { width: 236px; }
+  .bl-pfosten { right: 40px; }
+  .bl-stufen, .bl-bestt { padding-right: 0; margin-right: 18px; }
+  .bl-bestt { padding: 9px 10px; }
+  .bl-bestt span { letter-spacing: .5px; font-size: 9.5px; }
+  .bl-bestt b { font-size: 21px; }
+  .bl-bestt b small { font-size: 11px; }
+  .bl-fehler h3 { letter-spacing: .5px; font-size: 9.5px; gap: 6px; }
+  .bl-fehler h3 b { white-space: nowrap; font-size: 11px; }
+  .bl-fehler li { font-size: 12.5px; }
+}
+
+/* ---------- im Spiel ---------- */
+.bl-fahrt { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+.bl-fahrt[hidden] { display: none; }
+.bl-fl { position: absolute; right: max(10px, env(safe-area-inset-right, 0px)); top: 54px; }
+.bl-fl .bl-figur { width: 50px; height: 50px; box-shadow: 0 0 0 2.5px #fff, 0 0 0 4px var(--gruen), 0 3px 8px rgba(0,0,0,.35); }
+.bl-figur.huepfen { animation: huepfen .5s ease-out; }
+.bl-figur.wackeln { animation: wackeln .45s ease-in-out; }
+@keyframes huepfen { 0%, 100% { transform: none; } 40% { transform: translateY(-6px) scale(1.05); } }
+@keyframes wackeln { 0%, 100% { transform: none; } 20% { transform: rotate(-8deg); } 40% { transform: rotate(7deg); } 60% { transform: rotate(-5deg); } 80% { transform: rotate(3deg); } }
+.bl-sb {
+  position: absolute; right: max(70px, calc(env(safe-area-inset-right, 0px) + 70px)); top: var(--bl-blase, 108px); max-width: min(var(--bl-blase-max, 300px), calc(100vw - 92px));
+  background: #fff; color: #141816; font: 500 14px/1.3 'Kanit', sans-serif; padding: 8px 12px; border-radius: 12px; box-shadow: 0 3px 10px rgba(0,0,0,.25);
+  opacity: 0; transform: translateY(-4px) scale(.96); transform-origin: 100% 20px; transition: opacity .25s ease, transform .25s ease;
+}
+.bl-sb::after { content: ""; position: absolute; right: -7px; top: 14px; border: 7px solid transparent; border-right: 0; border-left-color: #fff; }
+.bl-sb.an { opacity: 1; transform: none; }
+.bl-hinweis {
+  position: absolute; left: 50%; transform: translateX(-50%); top: calc(var(--bl-armaturen, 480px) - 118px); white-space: nowrap;
+  background: rgba(14,16,18,.84); color: #e4e9e6; font: 500 13px 'Kanit', sans-serif; padding: 5px 10px; border-radius: 999px; display: flex; gap: 5px; align-items: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,.3);
+}
+.bl-hinweis[hidden] { display: none; }
+.bl-hinweis i { font-style: normal; opacity: .5; }
+.bl-hinweis .fertig { color: var(--licht); }
+/* Letzte Runde 29.10.2026 (Spielertest: gelbe Schrift schwer lesbar): aktueller Handgriff als gelbe Pille mit dunkler Schrift */
+.bl-hinweis .jetzt { color: #17130a; background: #ffd014; font-weight: 600; padding: 1px 9px; border-radius: 999px; margin: 0 -2px; }
+.bl-hinweis .fertig { font-weight: 500; }
+.bl-popups { position: fixed; inset: 0; pointer-events: none; z-index: 6; }
+.bl-popup { position: absolute; transform: translate(-50%, -50%); text-align: center; animation: aufsteigen 1.5s ease-out forwards; white-space: nowrap; }
+.bl-popup b { display: block; font: italic 800 26px/1 'Kanit', sans-serif; text-shadow: 0 2px 4px rgba(0,0,0,.6); }
+.bl-popup span { display: inline-block; margin-top: 3px; font: 600 12px 'Kanit', sans-serif; padding: 2px 8px; border-radius: 999px; background: rgba(16,18,20,.7); color: #fff; }
+.bl-popup.gut b { color: #8ff0ae; } .bl-popup.mittel b { color: #ffd014; } .bl-popup.schlecht b { color: #ff8a6a; }
+@keyframes aufsteigen { 0% { opacity: 0; transform: translate(-50%, -30%) scale(.8); } 15% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -110%); } }
+.bl-fps { position: fixed; left: 8px; bottom: 8px; z-index: 30; font: 600 12px 'Kanit', sans-serif; color: #fff; background: rgba(0,0,0,.6); padding: 3px 8px; border-radius: 6px; pointer-events: none; }
+.bl-fps[hidden] { display: none; }
+
+/* Einblendungen: Stufen-Titel und Gebiet je Situation */
+.bl-einbl { position: fixed; inset: 0; z-index: 15; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: opacity .32s ease; }
+.bl-einbl[hidden] { display: none; }
+.bl-einbl.rein { opacity: 1; }
+.bl-einbl.weg { opacity: 0; }
+.bl-einbl.karte { background: rgba(10,12,14,.92); }
+.bl-einbl.titel { background: rgba(10,12,14,.55); }
+.bl-gebiet { text-align: center; color: #fff; padding: 0 20px; transform: translateY(8px); transition: transform .4s ease; }
+.bl-einbl.rein .bl-gebiet { transform: none; }
+.bl-gebiet b { display: block; font: italic 800 26px/1.1 'Kanit', sans-serif; }
+.bl-gebiet span { display: block; margin-top: 6px; font: 400 15px 'Kanit', sans-serif; color: #c9d0cc; }
+.bl-titelschild { position: relative; width: min(320px, 86vw); height: 66px; filter: drop-shadow(0 4px 6px rgba(0,0,0,.4)); transform: translateX(40px); opacity: 0; transition: transform .5s cubic-bezier(.2,1.2,.4,1), opacity .4s; }
+.bl-einbl.rein .bl-titelschild { transform: none; opacity: 1; }
+.bl-titelschild .platte { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.bl-titelschild .inhalt { position: absolute; left: 13%; right: 5%; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; gap: 10px; color: #fff; font: italic 800 clamp(20px, 6.4vw, 26px)/1 'Kanit', sans-serif; white-space: nowrap; }
+.bl-titelschild .bl-pfeil { position: static; margin: 0; width: 28px; height: 22px; flex: none; }
+.bl-einbl.titel p { margin: 14px 0 0; color: #fff; font: 500 15px 'Kanit', sans-serif; text-shadow: 0 1px 4px rgba(0,0,0,.7); }
+
+/* Kreuzung (Draufsicht) */
+.bl-kreuzung { position: fixed; inset: 0; z-index: 16; background: rgba(10,12,14,.6); display: flex; align-items: center; justify-content: center; padding: 56px 12px 12px; overflow-y: auto; animation: einblenden .3s ease-out; }
+.bl-kreuzung[hidden] { display: none; }
+@keyframes einblenden { from { opacity: 0; } to { opacity: 1; } }
+.bl-krkarte { width: 100%; max-width: 380px; background: #fff; border-radius: 16px; padding: 14px 14px 16px; box-shadow: 0 10px 30px rgba(0,0,0,.4); text-align: center; margin: auto; }
+.bl-krkarte h2 { margin: 0; font: italic 800 22px 'Kanit', sans-serif; color: var(--gruen); }
+.bl-krkarte .regel { margin: 2px 0 8px; font: 400 12.5px 'Kanit', sans-serif; color: #6b716d; }
+.bl-krsvg { display: block; width: 100%; max-width: min(320px, 46vh); margin: 0 auto; border-radius: 12px; font-family: 'Kanit', sans-serif; }
+.bl-krsvg .fz { cursor: pointer; outline: none; }
+.bl-krsvg .fz:focus-visible circle:first-child { stroke: #ffd014; stroke-width: 3; }
+.bl-schirm [hidden], .bl-kreuzung [hidden], .bl-einbl [hidden] { display: none !important; }
+.bl-krsvg .fz .nr { opacity: 0; transition: opacity .2s; }
+.bl-krsvg .fz .nr circle { fill: #ffd014; stroke: #1a1d1b; stroke-width: 1.5; }
+.bl-krsvg .fz .nr text { font: 700 12px 'Kanit', sans-serif; fill: #1a1d1b; }
+.bl-krsvg .fz.gewaehlt .nr, .bl-krsvg .fz.falsch .nr { opacity: 1; }
+.bl-krsvg .fz.falsch .nr circle { fill: #fbe6dc; stroke: var(--rot); }
+.bl-krsvg .du { font: 700 11px 'Kanit', sans-serif; fill: #fff; paint-order: stroke; stroke: rgba(0,0,0,.6); stroke-width: 3px; }
+.bl-krkarte .anl, .bl-krkarte .ergebnis { margin: 10px 4px 0; font: 400 13.5px/1.4 'Kanit', sans-serif; color: #2a302c; }
+.bl-krkarte .ergebnis b { display: block; font-weight: 600; margin-bottom: 2px; }
+.bl-krkarte .ergebnis b.gut { color: var(--gruen); } .bl-krkarte .ergebnis b.schlecht { color: var(--rot); }
+.bl-krkarte .bl-knopf { margin-top: 12px; }
+
+/* Bewegung reduzieren: nur weiche Einblendungen */
+html.ruhig .bl-band { animation: einblenden .5s ease-out both !important; transform: translateX(-50%) rotate(-3deg); }
+html.ruhig .bl-stufe, html.ruhig .bl-ziel, html.ruhig .bl-prot, html.ruhig .bl-start *, html.ruhig .bl-ende * { animation-name: einblenden !important; }
+html.ruhig .bl-netzflaeche { animation: none; }
+html.ruhig .bl-popup { animation: einblendenAus 1.5s ease-out forwards; }
+@keyframes einblendenAus { 0% { opacity: 0; transform: translate(-50%, -50%); } 15%, 75% { opacity: 1; transform: translate(-50%, -50%); } 100% { opacity: 0; transform: translate(-50%, -50%); } }
+html.ruhig .bl-titelschild, html.ruhig .bl-gebiet { transform: none !important; }
+/* Phase 2b: Kreuzung – Hinweis nach falschem Antippen, Rettungswagen-Blaulicht, Fußgänger-Nummer */
+.bl-krkarte .anl.warn { color: #a3281c; font-weight: 500; }
+.bl-krsvg .blau { fill: #3a7bff; animation: bl-blau .5s steps(2) infinite; }
+@keyframes bl-blau { 50% { fill: #cfe0ff; } }
+@media (prefers-reduced-motion: reduce) { .bl-krsvg .blau { animation: none; } }
+.bl-krsvg .polizei, .bl-krsvg .vz, .bl-krsvg .ampel { pointer-events: none; }
+/* Phase 2b: neue Karten der Führerscheinmappe im Endbild (Weg zur Mappe auf der Startseite) */
+.bl-mappezeile { display: flex; align-items: center; gap: 7px; margin-top: 2px; font: 400 13.5px/1.3 'Kanit', sans-serif; color: #1d2420; text-decoration: none; }
+.bl-mappezeile svg { width: 18px; height: 15px; flex: none; fill: #fff; stroke: var(--gruen); stroke-width: 1.4; }
+.bl-mappezeile svg.p { width: 14px; height: 14px; fill: none; stroke: var(--gruen); stroke-width: 2.6; margin-left: auto; }
+.bl-mappezeile b { font-weight: 600; color: var(--gruen); }
+.bl-mappezeile.neu span { font-weight: 500; }
+.bl-mappezeile.neu svg:first-child { animation: bl-karte-wipp 1.6s ease-in-out .8s 2; }
+@keyframes bl-karte-wipp { 50% { transform: rotate(-8deg) scale(1.12); } }
+@media (prefers-reduced-motion: reduce) { .bl-mappezeile.neu svg:first-child { animation: none; } }
+
+/* Phase 3: Fahrlehrer im Endbild (Szenenbogen, freigestellt) – steht rechts unten am Ziel-Schild, kommt sanft dazu */
+.bl-flende { position: absolute; z-index: 2; right: -6px; bottom: -18px; width: 92px; pointer-events: none; opacity: 0; transform: translateY(10px); transition: opacity .5s ease-out .5s, transform .5s ease-out .5s; }
+.bl-flende.da { opacity: 1; transform: none; }
+.bl-flende img { display: block; width: 100%; height: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,.28)); -webkit-mask-image: linear-gradient(#000 78%, transparent); mask-image: linear-gradient(#000 78%, transparent); }
+.bl-figur.nicken { animation: nicken .6s ease-in-out; }
+@keyframes nicken { 0%, 100% { transform: none; } 30% { transform: translateY(3px) rotate(-2deg); } 60% { transform: translateY(-1px); } }
+@media (prefers-reduced-motion: reduce) { .bl-flende { transition: opacity .3s; transform: none; } .bl-figur.nicken { animation: none; } }
+@media (max-width: 360px) { .bl-flende { width: 74px; right: -8px; bottom: -14px; } }
+
+/* Phase-5-Korrektur: Handy quer (flach, Höhe bis ca. 430 px) – Sprechblase neben dem Fahrlehrer (rechts vom Innenspiegel, Breite aus
+   spiel.js), Handgriff-Leiste tiefer in der Scheibe (frei von Blase und Radio-Anzeige); Klasse bl-flach setzt spiel.js */
+html.bl-flach .bl-sb { font-size: 13px; line-height: 1.25; padding: 6px 10px; }
+html.bl-flach .bl-sb::after { top: 12px; }
+html.bl-flach .bl-hinweis { top: calc(var(--bl-armaturen, 300px) - 82px); font-size: 12px; padding: 5px 11px; }
+/* Phase-5-Korrektur: Kreuzung im flachen Querformat zweispaltig – Draufsicht links, Titel/Regel/Anleitung/Ergebnis rechts, ohne Scrollen */
+@media (orientation: landscape) and (max-height: 430px) {
+  .bl-kreuzung { padding: 50px 12px 8px; }
+  .bl-krkarte { max-width: 680px; display: grid; grid-template-columns: min(300px, calc(100vh - 84px)) minmax(0, 1fr); grid-template-rows: auto auto 1fr auto auto;
+    column-gap: 16px; text-align: left; padding: 10px 14px 12px 10px; }
+  .bl-krsvg { grid-column: 1; grid-row: 1 / 6; max-width: none; width: 100%; margin: 0; align-self: center; }
+  .bl-krkarte > :not(.bl-krsvg) { grid-column: 2; }
+  .bl-krkarte h2 { margin-top: 4px; }
+  .bl-krkarte .anl, .bl-krkarte .ergebnis { margin: 8px 0 0; }
+  .bl-krkarte .bl-knopf { margin-top: 10px; align-self: end; }
+}
+
+/* ---------- Spielertest 29.10.2026 ---------- */
+/* Kreuzung: Draufsicht größer (Hochformat fast volle Breite), Regelung in Alltagssprache unter der Frage */
+.bl-kreuzung { padding: 54px 6px 8px; }
+.bl-krkarte { max-width: 420px; padding: 12px 8px 14px; }
+.bl-krsvg { max-width: min(400px, 56vh); }
+.bl-krkarte .regel.alltag { font-size: 14px; color: #2a302c; font-weight: 500; line-height: 1.3; margin: 3px 6px 8px; }
+@media (orientation: landscape) and (max-height: 430px) {
+  .bl-kreuzung { padding: 48px 10px 6px; }
+  .bl-krkarte { max-width: 760px; grid-template-columns: min(360px, calc(100vh - 74px)) minmax(0, 1fr); padding: 8px 14px 10px 8px; }
+  .bl-krkarte .regel.alltag { margin: 3px 0 6px; }
+  .bl-krsvg { max-width: none; }
+}
+/* Startbild: gesperrte Stufe mit Hinweis, Schalter „Handgriffe zeigen“, erst zeigen wenn aufgebaut */
+.bl-start.baut .bl-spalten, .bl-start.baut .bl-logo { visibility: hidden; }
+.bl-stufe.aus { filter: drop-shadow(0 2px 3px rgba(0,0,0,.2)); }
+.bl-stufe.aus .platte { filter: grayscale(1) brightness(.95); opacity: .62; }
+.bl-stufe .name { display: flex; flex-direction: column; line-height: 1.05; min-width: 0; }
+.bl-stufe .name small { font: 400 10.5px/1.2 'Kanit', sans-serif; font-style: normal; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.45); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.bl-stufe.aus .name { color: rgba(255,255,255,.85); }
+.bl-einfknopf { align-self: center; display: inline-flex; align-items: center; gap: 6px; margin: 0 0 2px; padding: 6px 14px; border-radius: 999px; border: 1.5px solid var(--gruen);
+  background: rgba(255,255,255,.9); color: var(--gruen-dunkel); font: 500 13.5px 'Kanit', sans-serif; cursor: pointer; transition: transform .15s ease; }
+.bl-einfknopf svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+.bl-einfknopf:hover { transform: translateY(-1px); } .bl-einfknopf:active { transform: scale(.97); }
+.bl-knoepfe:has(.bl-einfknopf) { margin-top: clamp(10px, 4.5vh, 60px); }
+@media (orientation: portrait) and (max-height: 680px) { .bl-einfknopf { padding: 4px 12px; font-size: 13px; } }
+/* Endbild: Rechnung „verdient X − Abzüge Y = Ergebnis Z“; Figur mit festen Maßen (Platz schon vor dem Laden des Bildes) */
+.bl-rechnung { position: relative; z-index: 1; margin: 0; text-align: center; font: 400 12.5px/1.35 'Kanit', sans-serif; color: #4a524c; font-variant-numeric: tabular-nums; }
+.bl-rechnung b { font-weight: 600; color: #1d2420; }
+.bl-rechnung i { font-style: normal; color: #8a918c; margin: 0 2px; }
+.bl-flende { aspect-ratio: 480 / 447; }
+.bl-flende img { width: 100%; height: 100%; object-fit: contain; object-position: bottom; }
+/* Punkte je Situation (ruhig, kleiner als die Gefahr-Rückmeldung) */
+.bl-popup.summe b { font-size: 30px; }
+.bl-popup.summe { animation-duration: 1.8s; }
+/* Geführte erste Fahrt: „Überspringen“ und Bedien-Etikett */
+.bl-einfweg { position: fixed; z-index: 30; right: 100px; top: 8px; display: inline-flex; align-items: center; gap: 5px; padding: 7px 12px 7px 14px;
+  border-radius: 999px; border: 1px solid rgba(255,255,255,.45); background: rgba(16,18,20,.62); color: #fff; font: 500 13px 'Kanit', sans-serif; cursor: pointer; animation: einblenden .4s ease-out; }
+.bl-einfweg[hidden] { display: none; }
+.bl-einfweg svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.bl-etikett { position: fixed; z-index: 7; pointer-events: none; transform: translate(-50%, -100%); white-space: nowrap; padding: 6px 13px; border-radius: 999px;
+  background: #ffd014; color: #1a1d1b; font: 600 14px 'Kanit', sans-serif; box-shadow: 0 3px 10px rgba(0,0,0,.35); --pfeil: 0px; }
+.bl-etikett[hidden] { display: none; }
+.bl-etikett::after { content: ""; position: absolute; left: calc(50% + var(--pfeil)); bottom: -6px; margin-left: -7px; border: 7px solid transparent; border-bottom: 0; border-top-color: #ffd014; }
+.bl-etikett.unten { transform: translate(-50%, 0); }
+.bl-etikett.unten::after { bottom: auto; top: -6px; border: 7px solid transparent; border-top: 0; border-bottom-color: #ffd014; }
+.bl-etikett.mitte { font: italic 700 17px 'Kanit', sans-serif; padding: 7px 16px; }
+.bl-etikett.mitte::after { display: none; }
+.bl-etikett.rein { animation: etikettRein .35s ease-out, etikettPuls 1.6s ease-in-out .35s infinite; }
+.bl-etikett.unten.rein { animation: etikettReinU .35s ease-out, etikettPulsU 1.6s ease-in-out .35s infinite; }
+.bl-etikett.stark { box-shadow: 0 0 0 3px rgba(255,255,255,.85), 0 3px 12px rgba(0,0,0,.4); }
+@keyframes etikettRein { from { opacity: 0; transform: translate(-50%, -80%); } to { opacity: 1; transform: translate(-50%, -100%); } }
+@keyframes etikettReinU { from { opacity: 0; transform: translate(-50%, -20%); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes etikettPuls { 0%, 100% { transform: translate(-50%, -100%); } 50% { transform: translate(-50%, calc(-100% - 4px)) scale(1.04); } }
+@keyframes etikettPulsU { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 4px) scale(1.04); } }
+html.ruhig .bl-etikett.rein, html.ruhig .bl-etikett.unten.rein { animation: einblenden .3s ease-out; }
+@media (prefers-reduced-motion: reduce) { .bl-etikett.rein, .bl-etikett.unten.rein { animation: einblenden .3s ease-out; } }
+/* Endbild hochkant: Platz für die Rechnungszeile (375 × 812 weiter ohne Scrollen) – Abstände etwas enger */
+@media (orientation: portrait) {
+  .bl-ende { padding-top: max(60px, calc(env(safe-area-inset-top, 0px) + 56px)); }
+  .bl-ende .bl-zeilen:has(.bl-rechnung) { margin-top: 15px; padding: 5px 14px 6px; gap: 1px; }
+  .bl-ende .bl-sp2 { margin-top: 8px; }
+  .bl-ende .bl-prot { margin-top: 8px; }
+}
+/* Kopfzeile auf schmalen Handys (Spielertest 29.10.2026: „1/10 – Nach…“ abgeschnitten): Situation und Punkte zweizeilig übereinander */
+@media (max-width: 380px) {
+  #anzeige { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-rows: auto auto; column-gap: 8px; row-gap: 0; align-content: center; }
+  #anzeige > button, #anzeige > a { grid-row: 1 / 3; }
+  #anzeige #heimKnopf { grid-column: 1; } #anzeige #tonKnopf { grid-column: 3; } #anzeige #vollKnopf { grid-column: 4; }
+  #anzeige .links { grid-column: 2; grid-row: 1; font-size: 13.5px; line-height: 1.15; }
+  #anzeige .rechts { grid-column: 2; grid-row: 2; font-size: 12.5px; line-height: 1.15; font-weight: 500; }
+}
+
+/* Letzte Runde 29.10.2026: Mindestwertung erklären, Bestwert + Mappe in einer Reihe, Tipp zum teuersten Fehler */
+.bl-mindest { position: relative; z-index: 1; margin: 0; text-align: center; font: 400 12.5px/1.3 'Kanit', sans-serif; color: #6a4a10; }
+.bl-bestreihe { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.bl-bestreihe.allein { justify-content: center; }
+.bl-bestreihe .bl-bestzeile { text-align: left; }
+.bl-bestreihe .bl-mappezeile { margin-top: 0; }
+.bl-tipp { display: flex; align-items: flex-start; gap: 7px; margin: 7px 0 0; padding: 6px 9px; border-radius: 9px; background: #eef5ef;
+  font: 400 13px/1.3 'Kanit', sans-serif; color: #1d2420; animation: rein .5s ease-out .9s both; }
+.bl-tipp b { font-weight: 600; color: var(--gruen-dunkel); }
+.bl-tipp svg { width: 15px; height: 15px; flex: none; margin-top: 1px; fill: #e8a317; }
+/* Endbild hochkant bis 880 px Höhe: Platz für Tipp und Mindestwertung (375 × 812 ohne Scrollen) – etwas dichter */
+@media (orientation: portrait) and (max-height: 880px) {
+  .bl-ende { padding-top: max(54px, calc(env(safe-area-inset-top, 0px) + 50px)); padding-bottom: max(10px, env(safe-area-inset-bottom, 0px)); }
+  .bl-ende .bl-ziel { padding: 26px 14px 10px; }
+  .bl-ende .bl-ziel .zahl { font-size: 54px; }
+  .bl-ende .bl-zeilen:has(.bl-rechnung) { margin-top: 12px; }
+  .bl-ende .bl-sp2, .bl-ende .bl-prot { margin-top: 5px; }
+  .bl-ende .bl-prot { padding: 8px 12px; }
+  .bl-ende .bl-fehler { padding-top: 5px; }
+  .bl-ende .bl-fehler h3 { letter-spacing: .4px; font-size: 10px; }
+  .bl-ende .bl-fehler li { margin-top: 2px; }
+  .bl-ende .bl-tipp { margin-top: 5px; padding: 4px 9px; font-size: 12.5px; line-height: 1.25; }
+  .bl-ende .bl-unten { margin-top: 8px; gap: 7px; }
+}
+@media (max-width: 350px) { .bl-ende .bl-prot { padding-left: 6px; padding-right: 6px; } }

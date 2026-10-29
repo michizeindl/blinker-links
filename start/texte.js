@@ -1,0 +1,2 @@
+// Texte der Startseite – ERZEUGT von Material/Skripte/texte-bauen.py aus blinker-rahmen-entwurf.md, nicht von Hand ändern.
+window.BL_START_TEXTE = {"STUFE_FREI_AB":"Frei ab {punkte} Punkten in der {stufe}","EINFUEHRUNG_NOCHMAL":"Handgriffe zeigen","stufen":{"fahrstunde":{"titel":"Stufe 1 – Fahrstunde","kurz":"Fahrstunde"},"uebung":{"titel":"Stufe 2 – Übungsfahrt","kurz":"Übungsfahrt"},"pruefung":{"titel":"Stufe 3 – Prüfungsfahrt","kurz":"Prüfungsfahrt"}}};

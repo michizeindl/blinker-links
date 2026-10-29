@@ -1,0 +1,289 @@
+/* Startseite „Blinker links“ – Layout A „Cockpit“ mit Titel V3 „Wegweiser“ (MZ, 28.10.2026).
+   Oben heller Himmel mit Logo (links) und Titel-Schild, darunter der Blick durch die Scheibe, dann das Armaturenbrett:
+   Kombiinstrument (Blinkerpfeile, Fahrten, Karten, Tacho mit Bestwert, Anzeige), Kontrollleuchten je Stufe, Startknopf.
+   Hochformat: eine Spalte (max. 520 px breit, Rest dunkel). Flaches Querformat: zwei Spalten (links Titel + Scheibe). */
+:root {
+  --gruen: #1E7A3E;
+  --gruen-hell: color-mix(in srgb, var(--gruen), #fff 12%);
+  --gruen-dunkel: color-mix(in srgb, var(--gruen), #000 20%);
+  --licht: #3ddc6f; --orange: #ff9a1a;
+  --rauschen: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .16 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --fein: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* Tacho-Größe: wächst mit der Breite, schrumpft auf niedrigen Bildschirmen */
+  --t: clamp(150px, min(54vw, 26vh), 212px);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { min-height: 100%; }
+body {
+  background: #111214; color: #1d2420; font-family: 'Kanit', 'Segoe UI', Arial, sans-serif;
+  -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased; overflow-x: hidden;
+}
+.seite {
+  position: relative; max-width: 520px; margin: 0 auto; min-height: 100vh; min-height: 100dvh;
+  display: flex; flex-direction: column; background: #16181a; overflow: hidden;
+  box-shadow: 0 0 60px rgba(0,0,0,.5);
+}
+
+/* ---------- oben: Himmel, Logo, Titel ---------- */
+.oben {
+  position: relative; z-index: 2; flex: none; padding-bottom: 10px;
+  background: var(--fein), linear-gradient(#ecebe7, #dddbd5); background-size: 180px, auto;
+}
+.kopf {
+  display: flex; justify-content: space-between; align-items: center; height: 58px;
+  padding: 0 16px; padding-top: env(safe-area-inset-top, 0px); padding-left: max(16px, env(safe-area-inset-left, 0px));
+}
+.logo { height: 30px; display: flex; align-items: center; }
+.logo svg, .logo img { height: 30px; width: auto; display: block; }
+.logo svg { --mf-zeichen: var(--gruen); --mf-schrift: var(--gruen); }
+.logo svg path { transition: fill .5s ease; }
+.ton {
+  width: 36px; height: 36px; border-radius: 50%; border: 0; cursor: pointer; flex: none;
+  display: grid; place-items: center; background: color-mix(in srgb, var(--gruen), transparent 88%);
+  transition: transform .18s ease, background-color .18s ease;
+}
+.ton svg { width: 18px; height: 18px; fill: var(--gruen); }
+.ton:hover { transform: scale(1.08); }
+.ton:active { transform: scale(.92); }
+
+.titelzeile { display: flex; justify-content: center; margin-top: 2px; font-weight: inherit; }
+.schild {
+  position: relative; display: block; width: min(300px, 84vw); height: 62px;
+  filter: drop-shadow(0 3px 3px rgba(0,0,0,.28)) drop-shadow(0 1px 0 rgba(0,0,0,.25));
+}
+.schild .platte { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.schild stop.hell { stop-color: var(--gruen-hell); } .schild stop.mitte { stop-color: var(--gruen); } .schild stop.dunkel { stop-color: var(--gruen-dunkel); }
+.schild .inhalt { position: absolute; left: 12.5%; right: 5%; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; gap: 10px; }
+.schild .pfeil { width: 30px; height: 23px; flex: none; overflow: visible; filter: drop-shadow(0 1px 0 rgba(0,0,0,.25)); }
+.schild .name { font: italic 800 clamp(27px, 8.8vw, 33px)/1 'Kanit', sans-serif; letter-spacing: -.4px; color: #fff; text-shadow: 0 1px 0 rgba(0,0,0,.18); white-space: nowrap; }
+.slogan { text-align: center; font: 400 12.5px 'Kanit', sans-serif; letter-spacing: .3px; color: #66665f; margin-top: 6px; }
+
+/* ---------- Blick durch die Scheibe ---------- */
+.scheibe-rahmen {
+  position: relative; flex: 1 1 84px; min-height: 84px; max-height: 30vh;   /* Phase-5-Korrektur: wächst nur in freien Platz – Startseite 375 × 812 ohne Scrollen */
+  background: linear-gradient(#2b2d30, #1d1f22);
+}
+.scheibe {
+  position: absolute; inset: 0; background: url(scheibe.webp) center 30%/cover;
+  clip-path: polygon(7% 0, 93% 0, 100% 100%, 0 100%);
+}
+.scheibe::after { content: ""; position: absolute; inset: 0; background: linear-gradient(rgba(0,0,0,.28), rgba(0,0,0,0) 22%, rgba(0,0,0,0) 70%, rgba(0,0,0,.35)); }
+
+/* ---------- Armaturenbrett ---------- */
+.brett {
+  position: relative; z-index: 1; flex: none; margin-top: -30px; padding: 30px 14px 0;
+  border-radius: 50% 50% 0 0 / 40px 40px 0 0; display: flex; flex-direction: column; align-items: stretch;
+  background: var(--rauschen), linear-gradient(#2c2f33, #1b1d20 90px, #141517); background-size: 180px, auto;
+  box-shadow: 0 -6px 14px rgba(0,0,0,.45), inset 0 1.5px 0 rgba(255,255,255,.12);
+}
+.brett::before {
+  content: ""; position: absolute; left: 10px; right: 10px; top: 9px; height: 60px; pointer-events: none;
+  border-top: 1.6px dashed color-mix(in srgb, var(--gruen), #fff 25%); opacity: .75; border-radius: 50% 50% 0 0 / 34px 34px 0 0;
+}
+.kombi {
+  position: relative; height: calc(var(--t) + 42px); border-radius: 26px 26px 20px 20px;
+  background: radial-gradient(ellipse at 50% 0, #1d2124, #0b0d0e 70%);
+  box-shadow: inset 0 10px 18px rgba(0,0,0,.8), inset 0 0 0 1px rgba(255,255,255,.06), 0 1px 0 rgba(255,255,255,.07);
+}
+.tacho { position: absolute; left: 50%; top: 6px; width: var(--t); height: var(--t); margin-left: calc(var(--t) / -2); }
+.tacho svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.blink { position: absolute; top: 20px; width: 34px; height: 26px; }
+.blink.l { left: 20px; } .blink.r { right: 20px; }
+.blink svg { width: 100%; height: 100%; display: block; }
+.blink.r svg path { fill: #26302a; }
+.blink.l svg path { fill: #26302a; }
+.blink.l .an { fill: var(--licht); }
+.mini { position: absolute; top: calc(var(--t) * .44); width: 60px; text-align: center; color: #cfd6d2; }
+.mini.l { left: 8px; } .mini.r { right: 8px; }
+.mini b { display: block; font: 600 21px/1 'Kanit', sans-serif; color: #fff; font-variant-numeric: tabular-nums; }
+.mini span { font: 400 9.5px/1.2 'Kanit', sans-serif; color: #8e9893; letter-spacing: .3px; }
+.mini i { display: block; height: 4px; border-radius: 2px; background: #2b302d; margin: 6px 4px 0; overflow: hidden; }
+.mini i em { display: block; height: 100%; width: 0; background: var(--licht); transition: width 1s ease .6s; }
+.lcd {
+  position: absolute; left: 44px; right: 44px; bottom: 9px; height: 28px; border-radius: 7px; padding: 0 8px;
+  background: linear-gradient(#0f1513, #09100c); box-shadow: inset 0 0 0 1px rgba(61,220,111,.18);
+  display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; overflow: hidden;
+  font: 400 10.5px 'Kanit', sans-serif; color: #bfe9cb; letter-spacing: .2px;
+}
+.lcd b { font-weight: 600; color: #fff; }
+
+.leuchten { display: flex; gap: 8px; margin-top: 12px; }
+.leuchte {
+  flex: 1; border: 0; border-radius: 12px; padding: 8px 4px 7px; text-align: center; cursor: pointer; font: inherit;
+  background: linear-gradient(#101213, #0b0c0d); color: inherit; position: relative;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.8), 0 1px 0 rgba(255,255,255,.06);
+  transition: transform .18s ease, box-shadow .25s ease;
+}
+.leuchte svg { width: 30px; height: 30px; display: block; margin: 0 auto 4px; fill: none; stroke: var(--licht); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 3px rgba(61,220,111,.8)); }
+.leuchte span { display: block; font: 400 10.5px 'Kanit', sans-serif; color: #aab4ae; }
+.leuchte b { display: block; font: 600 17px/1.15 'Kanit', sans-serif; color: #fff; font-variant-numeric: tabular-nums; }
+.leuchte.an { box-shadow: inset 0 1px 3px rgba(0,0,0,.8), 0 0 0 1.5px var(--licht), 0 0 12px rgba(61,220,111,.35); }
+.leuchte:not(.aus):hover { transform: translateY(-2px); }
+.leuchte:not(.aus):active { transform: scale(.96); }
+.leuchte.aus { cursor: default; }
+.leuchte.aus svg { stroke: #3a403c; filter: none; }
+.leuchte.aus span { color: #59605b; } .leuchte.aus b { color: #3f4541; }
+
+.start {
+  display: block; align-self: center; margin: clamp(12px, 2.4vh, 22px) 0 6px; width: clamp(88px, 12.5vh, 108px); aspect-ratio: 1; border-radius: 50%; padding: 7px;
+  background: conic-gradient(from 200deg, #9aa0a3, #e9ecee, #7d8386, #d7dadc, #8a9093, #f2f4f5, #9aa0a3);
+  box-shadow: 0 8px 16px rgba(0,0,0,.6); text-decoration: none; transition: transform .2s ease;
+}
+.start > span {
+  width: 100%; height: 100%; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff;
+  background: radial-gradient(circle at 50% 35%, #2b2f31, #0e1011 70%);
+  box-shadow: inset 0 0 0 2.5px var(--licht), 0 0 14px rgba(61,220,111,.55), inset 0 0 12px rgba(61,220,111,.35);
+  animation: startGlimmen 2.6s ease-in-out infinite;
+}
+.start svg { width: 20px; height: 20px; fill: none; stroke: var(--licht); stroke-width: 2.4; stroke-linecap: round; margin-bottom: 2px; }
+.start b { font: 600 18px/1 'Kanit', sans-serif; letter-spacing: .3px; }
+.start:hover { transform: scale(1.05); }
+.start:active { transform: scale(.95); }
+@keyframes startGlimmen { 0%, 100% { box-shadow: inset 0 0 0 2.5px var(--licht), 0 0 14px rgba(61,220,111,.55), inset 0 0 12px rgba(61,220,111,.35); }
+  50% { box-shadow: inset 0 0 0 2.5px var(--licht), 0 0 22px rgba(61,220,111,.75), inset 0 0 16px rgba(61,220,111,.5); } }
+
+.fuss {
+  margin-top: auto; padding: 10px 6px max(12px, env(safe-area-inset-bottom, 0px));
+  font: 300 9.5px/1.55 'Kanit', sans-serif; text-align: center; color: #7f8883;
+  display: flex; flex-direction: column; align-items: center; user-select: text;
+}
+.fuss u { text-underline-offset: 2px; }
+
+/* ---------- sanftes Erscheinen (gestaffelt) ---------- */
+@keyframes rein { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes einblenden { from { opacity: 0; } to { opacity: 1; } }
+html.ohne-intro .kopf, html.ohne-intro .titelzeile, html.ohne-intro .slogan { animation: rein .55s ease-out both; }
+html.ohne-intro .titelzeile { animation-delay: .08s; }
+html.ohne-intro .slogan { animation-delay: .16s; }
+html.ohne-intro .titelzeile .pfeil { animation: einblenden .8s ease-out .35s both; }
+html.ohne-intro .kombi { animation: rein .6s ease-out .2s both; }
+html.ohne-intro .leuchte { animation: rein .5s ease-out both; }
+html.ohne-intro .leuchte:nth-child(1) { animation-delay: .32s; } html.ohne-intro .leuchte:nth-child(2) { animation-delay: .4s; } html.ohne-intro .leuchte:nth-child(3) { animation-delay: .48s; }
+html.ohne-intro .start { animation: rein .55s ease-out .56s both; }
+html.ohne-intro .fuss { animation: einblenden .6s ease-out .7s both; }
+
+/* ---------- Intro (start/intro.js) ---------- */
+html.intro body { overflow: hidden; }
+/* Logo und Titel liegen während des Intros über der grünen Fläche (die Fläche liegt über Himmel, Scheibe und Brett) */
+html.intro .oben { z-index: auto; }
+html.intro .kopf, html.intro .titelzeile, html.intro .slogan { position: relative; z-index: 60; }
+html.intro .ton { opacity: 0; }
+html.intro-logo-weiss .logo svg { --mf-zeichen: #fff; --mf-schrift: #fff; }
+.logo svg g { transition: fill .5s ease; }
+html.intro .logo, html.intro .titelzeile, html.intro .slogan, html.intro .brett, html.intro .scheibe-rahmen { opacity: 0; }
+.introbuehne { position: fixed; inset: 0; z-index: 50; pointer-events: auto; cursor: pointer; }
+.introbuehne .flaeche { position: absolute; left: 0; right: 0; top: 0; bottom: 0; }
+.introbuehne .icon { position: absolute; left: 0; top: 0; overflow: visible; }
+.introbuehne .flieger, .introflieger .flieger { position: absolute; left: 0; top: 0; overflow: visible; transform-origin: 0 0; will-change: transform; }
+/* Phase-5-Korrektur: Flieger über Titel/Logo (Pfeil verschwand hinter dem Schild); Schild hebt sich auf der grünen Fläche ab */
+.introflieger { position: fixed; inset: 0; z-index: 70; pointer-events: none; }
+.schild { transition: filter .5s ease; }
+html.intro-logo-weiss .schild { filter: drop-shadow(0 0 1.2px rgba(255,255,255,.95)) drop-shadow(0 5px 9px rgba(0,0,0,.5)) drop-shadow(0 1px 1px rgba(0,0,0,.4)); }
+
+/* ---------- flaches Querformat: zwei Spalten ---------- */
+@media (orientation: landscape) and (max-height: 560px) {
+  :root { --t: clamp(120px, 46vh, 190px); }
+  .seite { max-width: none; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); grid-template-rows: auto 1fr; }
+  .oben { grid-column: 1; grid-row: 1; padding-bottom: 6px; }
+  .kopf { height: 48px; }
+  .scheibe-rahmen { grid-column: 1; grid-row: 2; max-height: none; min-height: 0; }
+  .brett { grid-column: 2; grid-row: 1 / 3; margin-top: 0; border-radius: 0; padding: 10px 14px 0; display: grid;
+    grid-template-columns: 1fr auto; grid-template-rows: auto auto 1fr; column-gap: 12px; align-items: start; }
+  .brett::before { display: none; }
+  .kombi { grid-column: 1 / 3; }
+  .leuchten { grid-column: 1; margin-top: 8px; }
+  .leuchte { padding: 5px 3px; }
+  .leuchte svg { width: 22px; height: 22px; margin-bottom: 1px; }
+  .start { grid-column: 2; grid-row: 2; margin: 6px 0 0; width: 76px; }
+  .start b { font-size: 15px; }
+  .fuss { grid-column: 1 / 3; grid-row: 3; align-self: end; padding-top: 4px; font-size: 8.5px; }
+}
+/* mittlere Hochformate (z. B. 360 × 740, 412 × 780 mit Browserleisten, Phase-5-Korrektur): etwas engere Abstände, damit nichts scrollt */
+@media (orientation: portrait) and (min-height: 661px) and (max-height: 800px) {
+  .kopf { height: 50px; }
+  .scheibe-rahmen { min-height: 70px; }
+  .leuchten { margin-top: 9px; }
+  .leuchte { padding: 6px 4px 5px; }
+  .leuchte svg { width: 26px; height: 26px; margin-bottom: 3px; }
+  .start { width: clamp(84px, 11.5vh, 96px); margin: 10px 0 4px; }
+  .fuss { padding-top: 6px; }
+}
+/* sehr niedrige Hochformate (z. B. 320 × 568): Scheibe schmaler, kleinere Abstände */
+@media (orientation: portrait) and (max-height: 660px) {
+  :root { --t: clamp(140px, min(50vw, 25vh), 190px); }
+  .kopf { height: 50px; }
+  .scheibe-rahmen { flex-basis: 90px; min-height: 64px; }
+  .leuchten { margin-top: 9px; }
+  .leuchte { padding: 6px 3px 5px; }
+  .leuchte svg { width: 24px; height: 24px; margin-bottom: 2px; }
+  .start { width: 80px; margin: 10px 0 4px; }
+  .start b { font-size: 15px; }
+  .slogan { margin-top: 3px; }
+  .oben { padding-bottom: 6px; }
+  .fuss { padding-top: 6px; }
+}
+/* Bewegung reduzieren (start.js setzt html.ruhig auch bei prefers-reduced-motion): nur weiche Einblendungen, kein Hereingleiten */
+html.ruhig .kopf, html.ruhig .titelzeile, html.ruhig .slogan, html.ruhig .kombi, html.ruhig .leuchte, html.ruhig .start { animation-name: einblenden !important; }
+html.ruhig .start > span { animation: none; }
+html.ruhig .leuchte, html.ruhig .start, html.ruhig .ton { transition: none; transform: none !important; }
+/* ---------- Führerscheinmappe (Phase 2b) ---------- */
+button.mini { border: 0; padding: 0; background: none; font: inherit; cursor: pointer; border-radius: 10px; transition: transform .2s ease; }
+button.mini:hover { transform: translateY(-1px); } button.mini:active { transform: scale(.95); }
+button.mini:focus-visible, .mappe-knopf:focus-visible, .mappe button:focus-visible { outline: 2px solid var(--licht); outline-offset: 2px; }
+.mappe-knopf { align-self: center; display: flex; align-items: center; gap: 8px; margin: 2px 0 4px; padding: 6px 14px 6px 11px; border-radius: 18px;
+  border: 1px solid #3a403c; background: linear-gradient(#24282b, #17191b); color: #dfe5e1; font: 400 13px/1 'Kanit', sans-serif; cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.07); transition: transform .2s ease, border-color .2s; animation: einblenden .6s ease-out .9s both; }
+.mappe-knopf svg { width: 18px; height: 15px; fill: #2b302d; stroke: var(--licht); stroke-width: 1.3; }
+.mappe-knopf b { font-weight: 600; color: var(--licht); font-variant-numeric: tabular-nums; }
+.mappe-knopf:hover { transform: translateY(-1px); border-color: var(--licht); } .mappe-knopf:active { transform: scale(.96); }
+.mappe { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; background: #eef1ee; color: #1d2420;
+  opacity: 0; transform: translateY(18px); transition: opacity .26s ease, transform .26s ease; }
+.mappe.rein { opacity: 1; transform: none; }
+.mappe[hidden] { display: none; }
+.m-kopf { display: flex; align-items: center; gap: 10px; padding: max(10px, env(safe-area-inset-top, 0px)) 12px 8px; background: var(--gruen); color: #fff; }
+.m-kopf h2 { flex: 1; margin: 0; font: italic 800 19px/1.1 'Kanit', sans-serif; letter-spacing: .2px; }
+.m-zahl { font: 400 14px/1 'Kanit', sans-serif; } .m-zahl b { font-size: 20px; font-weight: 600; }
+.m-zu { width: 38px; height: 38px; border-radius: 50%; border: 0; background: rgba(255,255,255,.16); cursor: pointer; display: grid; place-items: center; }
+.m-zu svg { width: 22px; height: 22px; fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.m-balken { height: 5px; background: rgba(0,0,0,.12); } .m-balken i { display: block; height: 100%; background: #ff9a1a; }
+.m-inhalt { flex: 1; overflow-y: auto; padding: 6px 12px max(16px, env(safe-area-inset-bottom, 0px)); -webkit-overflow-scrolling: touch; }
+.m-gebiet h3 { margin: 14px 2px 8px; font: 600 15px/1 'Kanit', sans-serif; color: var(--gruen); display: flex; justify-content: space-between; }
+.m-gebiet h3 span { font-weight: 400; color: #5d665f; font-size: 13px; }
+.m-karten { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 148px), 1fr)); gap: 9px; }
+.m-karte { position: relative; display: block; width: 100%; min-height: 118px; padding: 0; border: 0; text-align: left; background: none; font: inherit; color: inherit;
+  perspective: 700px; cursor: pointer; animation: m-rein .45s ease-out both; }
+.m-karte > span { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 5px; padding: 10px 11px; border-radius: 10px; overflow: hidden;
+  background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.18), inset 0 0 0 1px rgba(0,0,0,.06); backface-visibility: hidden; transition: transform .45s ease; }
+.m-karte .vorn { border-top: 4px solid var(--gruen); }
+.m-karte .hinten { transform: rotateY(180deg); background: #f8faf8; border-top: 4px solid #ff9a1a; }
+.m-karte.auf .vorn { transform: rotateY(-180deg); } .m-karte.auf .hinten { transform: none; }
+.m-karte b { font: 600 13.5px/1.2 'Kanit', sans-serif; color: var(--gruen); }
+.m-karte span span { font: 400 12.5px/1.32 'Kanit', sans-serif; }
+.m-karte .hinten span { font-size: 11.5px; line-height: 1.3; overflow-y: auto; }
+.m-karte i { margin-top: auto; font: 400 10.5px/1.2 'Kanit', sans-serif; color: #5d665f; font-style: normal; }
+.m-karte.auf { min-height: 168px; }
+.m-karte.zu { cursor: default; }
+.m-karte.zu .vorn { background: #e2e6e3; border-top-color: #b9c0bb; box-shadow: inset 0 0 0 1px rgba(0,0,0,.05); }
+.m-karte.zu b { color: #6d756f; }
+.m-karte .verdeckt { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+.m-karte .verdeckt i { display: block; height: 7px; border-radius: 4px; background: #cdd3ce; margin: 0; } .m-karte .verdeckt i:nth-child(2) { width: 82%; } .m-karte .verdeckt i:nth-child(3) { width: 58%; }
+@keyframes m-rein { from { opacity: 0; transform: translateY(10px) rotateX(-12deg); } }
+html.mappe-offen { overflow: hidden; }
+@media (orientation: landscape) and (max-height: 560px) {
+  .mappe-knopf { display: none; }   /* quer: kein Platz im Raster – die Mappe öffnet über den Kartenzähler im Kombi-Instrument */
+  .m-karten { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+}
+@media (orientation: portrait) and (max-height: 660px) { .mappe-knopf { padding: 4px 12px 4px 9px; font-size: 12px; margin: 0 0 2px; } }
+html.ruhig .mappe, html.ruhig .m-karte > span { transition: opacity .2s; transform: none !important; }
+html.ruhig .m-karte { animation-name: einblenden; }
+html.ruhig .m-karte.auf .vorn { opacity: 0; } html.ruhig .m-karte .hinten { opacity: 0; } html.ruhig .m-karte.auf .hinten { opacity: 1; }
+html.ruhig .mappe-knopf { animation-name: einblenden; transition: none; }
+
+/* Phase 3: Kopf der Mappe aus dem gestalteten Leder (Kundenfarbe), Stempel neben dem Zähler */
+.m-kopf.leder { background: var(--leder) center 40% / 160% auto, var(--gruen); box-shadow: inset 0 -1px 0 rgba(0,0,0,.25); text-shadow: 0 1px 2px rgba(0,0,0,.35); }
+.m-stempel { width: 26px; height: auto; transform: rotate(-12deg); filter: drop-shadow(0 1px 2px rgba(0,0,0,.4)); animation: stempel .5s ease-out .2s both; }
+@keyframes stempel { from { opacity: 0; transform: rotate(-12deg) scale(1.4); } }
+@media (prefers-reduced-motion: reduce) { .m-stempel { animation: none; } }
+
+/* Spielertest 29.10.2026: gesperrte Stufe mit Hinweis statt Bestwert (zwei Zeilen, gleiche Höhe wie die Zahl) */
+.leuchte b.frei-ab { font: 400 9.5px/1.1 'Kanit', sans-serif; color: #7d857f; padding: 0 2px; min-height: 19.5px; display: flex; align-items: center; justify-content: center; }

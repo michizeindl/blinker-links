@@ -1,0 +1,17 @@
+/* Schrift der Sammlung „Blinker links“: nur Kanit (SIL Open Font License 1.1, siehe OFL-Kanit.txt) – Logo-Schrift der
+   Musterfirma, in keinem anderen Baukasten verwendet. Teilmenge Latein + Deutsch als WOFF2, erzeugt mit
+   node Material/Skripte/schrift-woff2.js Material/Schriften/Kanit <tmp> Kanit Kanit-Light.ttf:300 … Kanit-ExtraBoldItalic.ttf:800
+   Schnitte: 300 Footer, 400 Text, 500 Tafeln/Schalter, 600 Knöpfe/Zahlen, 600 kursiv Stufen-Schilder, 800 kursiv Titel/Band/Punkte.
+   Andere Gewichte nehmen den nächsten Schnitt. */
+@font-face { font-family: 'Kanit'; font-style: normal; font-weight: 300; font-display: swap;
+  src: url('kanit-light.woff2') format('woff2'); unicode-range: U+0020-007E, U+00A0-00FF, U+0152-0153, U+1E9E, U+2013-2014, U+2018-201A, U+201C-201E, U+2022, U+2026, U+20AC, U+2190, U+2192, U+2212, U+2248; }
+@font-face { font-family: 'Kanit'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url('kanit-regular.woff2') format('woff2'); unicode-range: U+0020-007E, U+00A0-00FF, U+0152-0153, U+1E9E, U+2013-2014, U+2018-201A, U+201C-201E, U+2022, U+2026, U+20AC, U+2190, U+2192, U+2212, U+2248; }
+@font-face { font-family: 'Kanit'; font-style: normal; font-weight: 500; font-display: swap;
+  src: url('kanit-medium.woff2') format('woff2'); unicode-range: U+0020-007E, U+00A0-00FF, U+0152-0153, U+1E9E, U+2013-2014, U+2018-201A, U+201C-201E, U+2022, U+2026, U+20AC, U+2190, U+2192, U+2212, U+2248; }
+@font-face { font-family: 'Kanit'; font-style: normal; font-weight: 600 700; font-display: swap;
+  src: url('kanit-semibold.woff2') format('woff2'); unicode-range: U+0020-007E, U+00A0-00FF, U+0152-0153, U+1E9E, U+2013-2014, U+2018-201A, U+201C-201E, U+2022, U+2026, U+20AC, U+2190, U+2192, U+2212, U+2248; }
+@font-face { font-family: 'Kanit'; font-style: italic; font-weight: 500 700; font-display: swap;
+  src: url('kanit-semibolditalic.woff2') format('woff2'); unicode-range: U+0020-007E, U+00A0-00FF, U+0152-0153, U+1E9E, U+2013-2014, U+2018-201A, U+201C-201E, U+2022, U+2026, U+20AC, U+2190, U+2192, U+2212, U+2248; }
+@font-face { font-family: 'Kanit'; font-style: italic; font-weight: 800 900; font-display: swap;
+  src: url('kanit-extrabolditalic.woff2') format('woff2'); unicode-range: U+0020-007E, U+00A0-00FF, U+0152-0153, U+1E9E, U+2013-2014, U+2018-201A, U+201C-201E, U+2022, U+2026, U+20AC, U+2190, U+2192, U+2212, U+2248; }
