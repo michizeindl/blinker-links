@@ -144,7 +144,7 @@
     S030: ['querer', { wer: 'kind', von: 'links', deckung: { art: 'eiswagen', x: 2.85, dz: -8 }, vz: 'deckung', tempo: 2.8 }],
     S031: ['gegen', { modus: 'eng' }],
     S032: ['abbiegen', { modus: 'gehweg', kmh: 20 }],
-    S033: ['querer', { wer: 'rollator', parker: true, vz: 'stehen', x0: 2.4 }],
+    S033: ['querer', { wer: 'rollator', parker: true, vz: 'stehen', x0: 2.1 }],   // x0 2.4 → 2.1: steht vorn in der Lücke (Rand der Parkspur), nicht hinter dem Auto
     S034: ['querer', { wer: 'arbeiter', deckung: { art: 'muell', x: 2.5, dz: -10, rundum: 'orange' }, vz: 'deckung', x0: 2.6, tempo: 1.6, tonnen: true }],
     S035: ['vorne', { art: 'radler', x: 0.4, v: 4.5, abstand: 60, radler: [[1.3, 0.4]], schild: { art: 'fahrradstrasse', dz: 30, zusatz: ' ' }, vz: 'schild', folgen: 4 }],
     S036: ['halt', { modus: 'schulampel' }],
@@ -300,5 +300,14 @@
     warten: ['Noch nicht – da kommt noch jemand.'],
   };
 
-  window.BL_DATEN = { FAUST, WETTER, FLAECHE, KREUZ_LAGE, ROUTE, RAND, PUNKTE, STUFEN, GEBIETE, BEREICHE, ZUORDNUNG, FEHLERGEWICHT, FEHLERART_SITUATION, FAHRZEUGE, BEWERTUNGEN, TEXTE, ABLAEUFE, KREUZUNGEN, SPRUECHE };
+  // Wetter-Sprüche (29.10.2026, Text Writer + Supervisor): Werte je Situation für das Feld „Wetter“ der WetterNacht-Sprüche
+  // (regen, nacht, nebel, schnee, glaette, blendung, wind, nass; alle = nur Sprüche mit „alle“). Situationen ohne Eintrag: aus Wetter,
+  // Licht und Fahrbahn abgeleitet (spiel.js wetterWerte) – Dämmerung/Nacht → nacht, Regen/Niesel → regen, Nebel, Schnee, Abendsonne →
+  // blendung, Glätte-Fläche → glaette, Wasser-/Pfützen-Fläche → nass. Ohne Wert kein Wetter-Spruch.
+  const WETTER_SPRUCH = {
+    S081: ['nacht'], S082: ['nacht', 'regen'], S083: ['nacht'], S084: ['nebel'], S085: ['regen', 'nass'], S086: ['regen'], S087: ['glaette'],
+    S088: ['blendung'], S089: ['alle'], S090: ['schnee'], S091: ['nacht'], S092: ['nacht'], S093: ['nacht'], S094: ['nass'], S095: ['wind'],
+    S096: ['regen'], S097: ['nacht'], S098: ['nebel'], S099: ['schnee', 'nass'], S100: ['nacht'], S072: ['wind'], S007: ['nass'],
+  };
+  window.BL_DATEN = { WETTER_SPRUCH, FAUST, WETTER, FLAECHE, KREUZ_LAGE, ROUTE, RAND, PUNKTE, STUFEN, GEBIETE, BEREICHE, ZUORDNUNG, FEHLERGEWICHT, FEHLERART_SITUATION, FAHRZEUGE, BEWERTUNGEN, TEXTE, ABLAEUFE, KREUZUNGEN, SPRUECHE };
 })();

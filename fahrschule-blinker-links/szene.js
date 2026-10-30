@@ -557,11 +557,16 @@
   function bild(gruppe, name) { return BI.bild ? BI.bild(gruppe + '/' + name) : null; }
   // nachts abgedunkelte Kopie (einmal je Bild und Stufe, nicht in jedem Bild neu)
   const dunkelCache = new Map();
-  let dunkelNr = 0;
+  let dunkelNr = 0, dunkelBudget = 2;
+  // große Hilfsbilder, die beim Zeichnen noch fehlen (sollten vorbereitet sein): je Bild höchstens zwei neue (Abdunkeln, Brandwand,
+  // Dachfläche) – sonst kurz eine einfachere Darstellung (Vorladen 29.10.2026: einzelnes Bild bis 1,4s, 4× gedrosselt)
+  function darfBauen(gross) { if (vorFrei || !gross) return true; if (dunkelBudget <= 0) return false; dunkelBudget--; return true; }
   function bildDunkel(img, f) {
     if (!img._dk) img._dk = 'b' + (++dunkelNr);
     const k = img._dk + '@' + f.toFixed(1);
     if (dunkelCache.has(k)) return dunkelCache.get(k);
+    // je Bild höchstens zwei große neue Fassungen (29.10.2026, Einzelhäuser 1400 px): sonst Ruckler beim Wetterwechsel; bis dahin das Original
+    if (!darfBauen((img.naturalWidth || img.width) > 600)) return img;
     const c = document.createElement('canvas'); c.width = img.naturalWidth || img.width; c.height = img.naturalHeight || img.height;
     const x = c.getContext('2d'); x.drawImage(img, 0, 0); x.globalCompositeOperation = 'source-atop'; x.fillStyle = `rgba(4,6,12,${1 - f})`; x.fillRect(0, 0, c.width, c.height);
     dunkelCache.set(k, c); return c;
@@ -757,7 +762,7 @@
       const breit = ms.h * ms.px[0] / ms.px[1], x2 = x + o.seite * breit;
       const a = xs(x, z), b = xs(x2, z), oben = ys(ms.h, z);
       if (Math.max(a, b) > -4 && Math.min(a, b) < L.B + 4) {
-        if (img) g.drawImage(img, Math.min(a, b) - 0.4, oben, Math.abs(b - a) + 0.8, unten - oben);
+        if (img) { const [m] = mipBild(img, (unten - oben) * dprJetzt / (img.naturalHeight || img.height)); g.drawImage(m, Math.min(a, b) - 0.4, oben, Math.abs(b - a) + 0.8, unten - oben); }
         else { g.fillStyle = abdunkeln(ms.farbe || '#cbbca6', 0.8); g.fillRect(Math.min(a, b), ys(ms.h * 0.7, z), Math.abs(b - a), unten - ys(ms.h * 0.7, z)); }
       }
       x = x2 + o.seite * (zufall(n, 92, o.saat) < 0.6 ? 0.1 : 1.5 + zufall(n, 93, o.saat) * 2); n++;
@@ -778,57 +783,50 @@
   // putz = Wandfarbe der Code-Körper (Textur putz-hell eingefärbt), dach = Dachtextur (biber, ziegel, schiefer, blech), lang = Anteil der Bildlänge des
   // vorderen Hauses (laengs), tiefe = Haustiefe in m (sonst aus der Seitenansicht bzw. HAUS_TIEFE). null = kein Gebäude.
   // Farben der Code-Wände: Median der Vorderansicht am jeweiligen Ende gemessen (bilder/fassade, 29.10.2026), leicht geglättet.
-  const GEBAEUDE = {
-    'stadt-1': { traufe: 0.70, first: 0.96, L: { seite: 'stadt-1' }, R: { seite: 'stadt-cafe', farbe: '#dcd2c4', first: 0.98 } },
-    'stadt-2': { traufe: 0.70, first: 0.97, L: { seite: 'stadt-2' }, R: { lage: 'flach', traufe: 0.71, putz: '#cfcfcf' } },
-    'stadt-3': { traufe: 0.72, first: 0.98, L: { seite: 'stadt-3' }, R: { seite: 'stadt-2', farbe: '#b8ad9c', first: 1 } },
-    'stadt-4': { traufe: 0.72, first: 0.99, L: { seite: 'stadt-4' }, R: { seite: 'stadt-haltestelle', farbe: '#d6d0c8', traufe: 0.70, first: 0.97 } },
-    'stadt-cafe': { traufe: 0.70, first: 0.95, L: { seite: 'stadt-4', farbe: '#b76d5a', first: 0.92 }, R: { seite: 'stadt-cafe', first: 1 } },
-    'stadt-haltestelle': { traufe: 0.70, first: 0.96, L: { seite: 'stadt-haltestelle' }, R: { seite: 'stadt-rathaus', farbe: '#d9c9a8', traufe: 0.68, first: 0.92 } },
+  const GEBAEUDE = {   // neu eingemessen an den Einzelhäusern (hd-fassade-*, 29.10.2026; Messbögen …/blinker-links-nacht-haeuser-2026-10-29/messbogen/)
+    'stadt-1': { traufe: 0.70, first: 0.94, L: { seite: 'stadt-1' }, R: { seite: 'stadt-cafe', farbe: '#dcd2c4', traufe: 0.69, first: 0.96 } },
+    'stadt-2': { traufe: 0.71, first: 0.98, L: { seite: 'stadt-2' }, R: { lage: 'flach', traufe: 0.71, putz: '#cfcfcf' } },
+    'stadt-3': { traufe: 0.71, first: 0.92, L: { seite: 'stadt-3' }, R: { seite: 'stadt-2', farbe: '#b8ad9c', traufe: 0.72, first: 0.99 } },
+    'stadt-4': { traufe: 0.72, first: 0.985, L: { seite: 'stadt-4' }, R: { seite: 'stadt-haltestelle', farbe: '#d6d0c8', traufe: 0.65, first: 0.96 } },
+    'stadt-cafe': { traufe: 0.715, first: 0.99, L: { seite: 'stadt-4', farbe: '#b76d5a', traufe: 0.735, first: 0.91 }, R: { seite: 'stadt-cafe' } },
+    'stadt-haltestelle': { traufe: 0.745, first: 0.955, L: { seite: 'stadt-haltestelle' }, R: { seite: 'stadt-rathaus', farbe: '#d9c9a8', traufe: 0.70, first: 0.905 } },
     // Kirche: die Vorderansicht zeigt schon die Langseite – an den Enden steht nur die Friedhofsmauer (Seitenansicht Langhaus passt dort nicht)
-    'stadt-kirche': { traufe: 0.12, first: 0.12, lage: 'flach', putz: '#cfc3a6', mauer: true },
-    'stadt-rathaus': { traufe: 0.62, first: 0.80, seite: 'stadt-rathaus' },
-    'wohngebiet-bauernhaus': { traufe: 0.60, first: 1, L: { seite: 'wohngebiet-bauernhaus', lage: 'laengs', lang: 0.8 }, R: { lage: 'laengs', traufe: 0.42, first: 0.62, putz: '#6b5238', dach: 'ziegel', lang: 0.25, tiefe: 7 } },
-    'wohngebiet-doppelhaus': { traufe: 0.72, first: 0.97, L: { seite: 'wohngebiet-doppelhaus' }, R: { seite: 'wohngebiet-doppelhaus', farbe: '#ddd5c8' } },
-    'wohngebiet-efh': { traufe: 0.53, L: { seite: 'wohngebiet-efh', lage: 'laengs', first: 0.97, lang: 0.48 }, R: { seite: 'wohngebiet-efh', farbe: '#e0dad0', lage: 'laengs', first: 0.93, lang: 0.42 } },
-    'wohngebiet-kindergarten': { traufe: 0.63, first: 0.95, seite: 'wohngebiet-kindergarten', lage: 'laengs', lang: 0.36 },
-    'wohngebiet-reihenhaus': { traufe: 0.72, first: 0.97, L: { seite: 'wohngebiet-reihenhaus' }, R: { seite: 'wohngebiet-reihenhaus', farbe: '#c4b8a6' } },
-    'wohngebiet-schule': { traufe: 0.72, first: 0.93, seite: 'wohngebiet-schule' },
-    'wohngebiet-spielplatz': null, 'wohngebiet-turnhalle': { traufe: 0.80, first: 0.97, seite: 'wohngebiet-turnhalle', lage: 'laengs', lang: 0.5, dach: 'blech' },
+    'stadt-kirche': { traufe: 0.14, first: 0.14, lage: 'flach', putz: '#cfc3a6', mauer: true },
+    'stadt-rathaus': { traufe: 0.63, first: 0.815, seite: 'stadt-rathaus' },
+    'wohngebiet-bauernhaus': { traufe: 0.59, first: 0.99, L: { seite: 'wohngebiet-bauernhaus', lage: 'laengs', lang: 0.8 }, R: { lage: 'laengs', traufe: 0.41, first: 0.56, putz: '#6b5238', dach: 'ziegel', lang: 0.25, tiefe: 7 } },
+    'wohngebiet-doppelhaus': { traufe: 0.72, first: 0.89, L: { seite: 'wohngebiet-doppelhaus' }, R: { seite: 'wohngebiet-doppelhaus', farbe: '#ddd5c8' } },
+    'wohngebiet-efh': { traufe: 0.645, L: { seite: 'wohngebiet-efh', lage: 'laengs', first: 0.99, lang: 0.48 }, R: { seite: 'wohngebiet-efh', farbe: '#e0dad0', lage: 'laengs', first: 0.965, lang: 0.42 } },
+    'wohngebiet-kindergarten': { traufe: 0.66, first: 0.99, seite: 'wohngebiet-kindergarten', lage: 'laengs', lang: 0.36, R: { traufe: 0.60, first: 0.92 } },
+    'wohngebiet-reihenhaus': { traufe: 0.72, first: 0.94, L: { seite: 'wohngebiet-reihenhaus' }, R: { seite: 'wohngebiet-reihenhaus', farbe: '#c4b8a6' } },
+    'wohngebiet-schule': { traufe: 0.72, first: 0.92, seite: 'wohngebiet-schule' },
+    'wohngebiet-spielplatz': null, 'wohngebiet-turnhalle': { traufe: 0.80, first: 0.99, seite: 'wohngebiet-turnhalle', lage: 'laengs', lang: 0.5, dach: 'blech' },
     // Garage/Nebengebäude (Lückenfüller im Wohngebiet, reiheBauen): Traufseite zur Straße, Giebel an den Enden
-    'wohngebiet-garage': { traufe: 0.66, first: 1, lage: 'giebel', putz: '#e3dccd', dach: 'ziegel', tiefe: 6 },
+    'wohngebiet-garage': { traufe: 0.69, first: 1, lage: 'giebel', putz: '#e3dccd', dach: 'ziegel', tiefe: 6 },
   };
-  // Seitenansichten (bilder/hausseite, am Bild gemessen 29.10.2026): wl/wr = Wandkanten (Anteil der Bildbreite, ohne Fallrohr/Überstand),
+  // Seitenansichten (bilder/hausseite, neu gemessen an hd-seite-* 29.10.2026): wl/wr = Wandkanten (Anteil der Bildbreite, ohne Fallrohr/Überstand),
   // traufe/first = Traufe/First (Anteil der Bildhöhe von unten), dach 'flach' = Giebel liegt in der Wandebene, 'tief' = Dachteil des Bildes
-  // läuft nach hinten (Walm, Traufseite), vorn = Bildkante zur Straße, ohneDach = Bild endet an der Traufe (Turnhalle: Pultdach im Bild,
-  // Vorderansicht flaches Satteldach → Dach aus dem Code mit Textur dach).
+  // läuft nach hinten (Walm, Traufseite), vorn = Bildkante zur Straße, ohneDach = nur die Wand bis zur Traufe (Turnhalle: Bild zeigt oben nur
+  // die Dachkante des flachen Satteldachs → Dach aus dem Code mit Textur dach).
   const SEITE = {
-    'stadt-1': { wl: 0.07, wr: 0.90, traufe: 0.635, first: 0.98, dach: 'flach' },
-    'stadt-2': { wl: 0.06, wr: 0.91, traufe: 0.635, first: 0.99, dach: 'flach' },
-    'stadt-3': { wl: 0.13, wr: 0.91, traufe: 0.665, first: 0.99, dach: 'flach', vorn: 'r' },   // Erker links → nach hinten
-    'stadt-4': { wl: 0.07, wr: 0.92, traufe: 0.775, first: 0.98, dach: 'tief' },
-    'stadt-cafe': { wl: 0.05, wr: 0.94, traufe: 0.655, first: 0.97, dach: 'flach' },
-    'stadt-haltestelle': { wl: 0.05, wr: 0.94, traufe: 0.655, first: 0.95, dach: 'flach' },
-    'stadt-rathaus': { wl: 0.04, wr: 0.95, traufe: 0.665, first: 0.94, dach: 'tief' },
-    'wohngebiet-bauernhaus': { wl: 0.09, wr: 0.90, traufe: 0.66, first: 0.92, dach: 'tief' },
-    'wohngebiet-doppelhaus': { wl: 0.07, wr: 0.93, traufe: 0.555, first: 1, dach: 'flach' },
-    'wohngebiet-efh': { wl: 0.05, wr: 0.94, traufe: 0.67, first: 0.93, dach: 'tief' },
-    'wohngebiet-kindergarten': { wl: 0.04, wr: 0.955, traufe: 0.66, first: 1, dach: 'tief' },
-    'wohngebiet-reihenhaus': { wl: 0.07, wr: 0.93, traufe: 0.60, first: 1, dach: 'flach' },
-    'wohngebiet-schule': { wl: 0.04, wr: 0.955, traufe: 0.73, first: 0.99, dach: 'tief' },
-    'wohngebiet-turnhalle': { wl: 0.0, wr: 0.97, traufe: 1, first: 1, ohneDach: true, vorn: 'r' },
+    'stadt-1': { wl: 0.073, wr: 0.88, traufe: 0.64, first: 0.98, dach: 'flach' },
+    'stadt-2': { wl: 0.062, wr: 0.903, traufe: 0.633, first: 0.99, dach: 'flach' },
+    'stadt-3': { wl: 0.145, wr: 0.888, traufe: 0.668, first: 0.99, dach: 'flach', vorn: 'r' },   // Erker links → nach hinten
+    'stadt-4': { wl: 0.052, wr: 0.907, traufe: 0.774, first: 0.99, dach: 'tief' },
+    'stadt-cafe': { wl: 0.063, wr: 0.933, traufe: 0.665, first: 0.99, dach: 'flach' },
+    'stadt-haltestelle': { wl: 0.063, wr: 0.928, traufe: 0.668, first: 0.973, dach: 'flach' },
+    'stadt-rathaus': { wl: 0.052, wr: 0.945, traufe: 0.668, first: 0.949, dach: 'tief' },
+    'wohngebiet-bauernhaus': { wl: 0.093, wr: 0.898, traufe: 0.695, first: 0.92, dach: 'tief' },
+    'wohngebiet-doppelhaus': { wl: 0.078, wr: 0.922, traufe: 0.577, first: 0.99, dach: 'flach' },
+    'wohngebiet-efh': { wl: 0.052, wr: 0.943, traufe: 0.678, first: 0.93, dach: 'tief' },
+    'wohngebiet-kindergarten': { wl: 0.042, wr: 0.935, traufe: 0.687, first: 1, dach: 'tief' },
+    'wohngebiet-reihenhaus': { wl: 0.09, wr: 0.912, traufe: 0.615, first: 0.99, dach: 'flach' },
+    'wohngebiet-schule': { wl: 0.04, wr: 0.953, traufe: 0.729, first: 1, dach: 'tief' },
+    'wohngebiet-turnhalle': { wl: 0.003, wr: 0.967, traufe: 0.959, first: 1, ohneDach: true, vorn: 'r' },
   };
   const HAUS_TIEFE = 10;   // Haustiefe der Code-Körper (m)
   const DACH_KANTE = { biber: '#6e3326', ziegel: '#5a3424', schiefer: '#33363b', blech: '#55585c' };
-  // Hilfsbilder (je einmal erzeugt): gespiegelt, Brandwand-Fassung, eingefärbter Putz, gekachelte Dachfläche
-  const spiegelCache = new WeakMap(), brandCache = new WeakMap(), putzCache = new Map(), dachCache = new Map();
-  function gespiegelt(img) {
-    let c = spiegelCache.get(img);
-    if (c) return c;
-    c = document.createElement('canvas'); c.width = img.naturalWidth || img.width; c.height = img.naturalHeight || img.height;
-    const x = c.getContext('2d'); x.translate(c.width, 0); x.scale(-1, 1); x.drawImage(img, 0, 0);
-    spiegelCache.set(img, c); return c;
-  }
+  // Hilfsbilder (je einmal erzeugt): Brandwand-Fassung, eingefärbter Putz, gekachelte Dachfläche (seitenverkehrt zeichnet quer() selbst)
+  const brandCache = new WeakMap(), putzCache = new Map(), dachCache = new Map();
   // eingefärbter Putz (Textur putz-hell × Farbe × Helligkeit f) als Muster
   function putzMuster(farbe, f) {
     const k = farbe + '@' + f.toFixed(2);
@@ -856,6 +854,7 @@
     const k = dach + '@' + f.toFixed(2);
     let c = dachCache.get(k);
     if (c) return c;
+    if (!darfBauen(true)) return null;
     const tex = BI.bild && BI.bild('textur/dach-' + dach);
     if (!tex) return null;
     const tw = tex.naturalWidth || tex.width, th = tex.naturalHeight || tex.height, w = 96, h = Math.round(w * th / tw), ohne = 0.86, ho = Math.round(h * ohne);   // unten 14 % = Rinne
@@ -868,49 +867,74 @@
     x.globalCompositeOperation = 'source-atop'; x.fillStyle = `rgba(4,6,12,${(1 - f).toFixed(2)})`; x.fillRect(0, 0, c.width, c.height);
     dachCache.set(k, c); return c;
   }
-  // mittlere Putzfarbe der Wand einer Seitenansicht (Median im Wandbereich unter der Traufe, jeder 3. Punkt) – einmal je Bild
+  // mittlere Putzfarbe der Wand einer Seitenansicht (Median im Wandbereich unter der Traufe) – einmal je Bild. Vorladen 29.10.2026: an einer
+  // verkleinerten Kopie (höchstens 192 px breit) gemessen – an der großen Fassung kostete das bis 54 ms je Bild (getImageData + Sortieren)
   const wandCache = new WeakMap();
   function wandMittel(img, S) {
     let m = wandCache.get(img);
     if (m) return m;
     m = [200, 190, 170];
     try {
-      const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height, c = document.createElement('canvas'); c.width = w; c.height = h;
-      const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0);
-      const d = x.getImageData(0, 0, w, h).data, y0 = Math.round((1 - S.traufe) * h + 0.1 * h), y1 = Math.round(h * 0.85);
-      const werte = [[], [], []];
-      for (let y = y0; y < y1; y += 3) for (let i = Math.round(S.wl * w) + 4; i < S.wr * w - 4; i += 3) { const k = (y * w + i) * 4; if (d[k + 3] > 200) for (let j = 0; j < 3; j++) werte[j].push(d[k + j]); }
-      if (werte[0].length) m = werte.map(l => { l.sort((p, q) => p - q); return l[l.length >> 1]; });   // Median: Fenster stören nicht
+      const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height, sk = Math.min(1, 192 / iw);
+      const w = Math.max(1, Math.round(iw * sk)), h = Math.max(1, Math.round(ih * sk)), c = document.createElement('canvas'); c.width = w; c.height = h;
+      const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0, w, h);
+      const d = x.getImageData(0, 0, w, h).data, y0 = Math.round((1 - S.traufe) * h + 0.1 * h), y1 = Math.round(h * 0.85), r = Math.max(1, Math.round(4 * sk));
+      // Median über Häufigkeiten je Kanal (Sortieren kostete 13–21 ms): Fenster stören nicht
+      const hist = [new Uint32Array(256), new Uint32Array(256), new Uint32Array(256)];
+      let n = 0;
+      for (let y = y0; y < y1; y++) for (let i = Math.round(S.wl * w) + r; i < S.wr * w - r; i++) { const k = (y * w + i) * 4; if (d[k + 3] > 200) { n++; for (let j = 0; j < 3; j++) hist[j][d[k + j]]++; } }
+      if (n) m = hist.map(hh => { let s = 0, v = 0; for (; v < 255; v++) { s += hh[v]; if (s > n >> 1) break; } return v; });
     } catch (e) { /* Bild nicht lesbar */ }
     wandCache.set(img, m); return m;
   }
   // Seitenansicht eines anderen Hauses umfärben (Putz → farbe; Fenster, Gesimse, Dach bleiben): Punkte nahe der Putzfarbe werden um den
-  // Farbabstand verschoben (voll bis 30, weich bis 120 Abstand); nachts Zielfarbe wie die Nachtfassung (× 0,2/0,22/0,3) – einmal je Bild und Farbe
-  const umfCache = new WeakMap();
-  function umgefaerbt(img, S, farbe, nacht) {
-    let mp = umfCache.get(img);
-    if (!mp) umfCache.set(img, mp = new Map());
-    let c = mp.get(farbe);
-    if (c) return c;
-    c = img;
-    try {
-      const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height, cv = document.createElement('canvas'); cv.width = w; cv.height = h;
-      const x = cv.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0);
-      const bild = x.getImageData(0, 0, w, h), d = bild.data, m = wandMittel(img, S), zu = hexRgb(farbe).map((v, j) => (nacht ? v * [0.2, 0.22, 0.3][j] : v));
-      const dv = [zu[0] - m[0], zu[1] - m[1], zu[2] - m[2]];
-      for (let k = 0; k < d.length; k += 4) {
+  // Farbabstand verschoben (voll bis 30, weich bis 120 Abstand); nachts Zielfarbe wie die Nachtfassung (× 0,2/0,22/0,3) – einmal je Bild und Farbe.
+  // Vorladen 29.10.2026: bei großen Bildern in Teilschritten (umfaerbenWeiter, je Aufruf ca. 3 ms) während der Vorbereitung – sonst bis 74 ms
+  // am Stück. Beim Zeichnen ohne fertige Fassung: große Bilder vorerst unverändert (die große Fassung wird ohnehin erst nach der
+  // Vorbereitung freigegeben), kleine sofort.
+  const umfCache = new WeakMap(), umfLauf = new WeakMap();
+  function umfCacheVon(img) { let mp = umfCache.get(img); if (!mp) umfCache.set(img, mp = new Map()); return mp; }
+  function umfaerbenWeiter(img, S, farbe, nacht, ms) {
+    const mp = umfCacheVon(img);
+    if (mp.has(farbe)) return true;
+    let lauf = umfLauf.get(img);
+    if (!lauf || lauf.farbe !== farbe) {
+      try {
+        const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height, cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+        const x = cv.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0);
+        const bild = x.getImageData(0, 0, w, h), m = wandMittel(img, S), zu = hexRgb(farbe).map((v, j) => (nacht ? v * [0.2, 0.22, 0.3][j] : v));
+        lauf = { farbe, cv, x, bild, m, dv: [zu[0] - m[0], zu[1] - m[1], zu[2] - m[2]], k: 0 };
+        umfLauf.set(img, lauf);
+      } catch (e) { mp.set(farbe, img); return true; }   // Bild nicht lesbar: unverändert
+      if (ms != null) return false;
+    }
+    const d = lauf.bild.data, m = lauf.m, dv = lauf.dv, t0 = performance.now();
+    while (lauf.k < d.length) {
+      const ende = Math.min(d.length, lauf.k + 4 * 20000);
+      for (let k = lauf.k; k < ende; k += 4) {
         if (d[k + 3] < 20) continue;
         const ab = Math.abs(d[k] - m[0]) + Math.abs(d[k + 1] - m[1]) + Math.abs(d[k + 2] - m[2]), wt = klemm(1 - (ab - 30) / 90, 0, 1);
         if (wt > 0) { d[k] += wt * dv[0]; d[k + 1] += wt * dv[1]; d[k + 2] += wt * dv[2]; }
       }
-      x.putImageData(bild, 0, 0); c = cv;
-    } catch (e) { /* Bild nicht lesbar: unverändert */ }
-    mp.set(farbe, c); return c;
+      lauf.k = ende;
+      if (ms != null && performance.now() - t0 > ms && lauf.k < d.length) return false;
+    }
+    lauf.x.putImageData(lauf.bild, 0, 0);
+    mp.set(farbe, lauf.cv); umfLauf.delete(img);
+    return true;
+  }
+  function umgefaerbt(img, S, farbe, nacht) {
+    const mp = umfCacheVon(img), c = mp.get(farbe);
+    if (c) return c;
+    if ((img.naturalWidth || img.width) > 300) { if (vorFrei) return null; return img; }   // groß: nur über die Vorbereitung (Teilschritte)
+    umfaerbenWeiter(img, S, farbe, nacht);
+    return mp.get(farbe) || img;
   }
   // Seitenansicht als Brandwand: Wand unter der Traufe = Putz in der Mittelfarbe der Ansicht (keine Fenster), Giebel/Dach aus dem Bild
   function brandFassung(img, S, farbe) {
     let c = brandCache.get(img);
     if (c) return c;
+    if (!darfBauen((img.naturalWidth || img.width) > 600)) return img;
     const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height, p = putzMuster(farbe, 1);
     if (!p) return img;
     c = document.createElement('canvas'); c.width = w; c.height = h;
@@ -922,12 +946,39 @@
     brandCache.set(img, c); return c;
   }
   // Bildstück (Spalten sx0..sx1, Zeilen sy0..sy1 des Originals) zwischen den Weltpunkten X0 (Spalte sx0) und X1 (Spalte sx1) in
-  // Entfernung z zeichnen; liegt X1 auf dem Bildschirm links von X0, kommt die gespiegelte Fassung
+  // Entfernung z zeichnen; liegt X1 auf dem Bildschirm links von X0, wird seitenverkehrt gezeichnet
   function quer(img, sx0, sx1, sy0, sy1, X0, X1, z, yo, yu) {
-    const a = xs(X0, z), b = xs(X1, z), iw = img.naturalWidth || img.width;
+    const a = xs(X0, z), b = xs(X1, z);
     if (Math.max(a, b) < -2 || Math.min(a, b) > L.B + 2 || yu - yo < 0.3) return;
-    if (a <= b) g.drawImage(img, sx0, sy0, sx1 - sx0, sy1 - sy0, a - 0.3, yo, b - a + 0.6, yu - yo);
-    else g.drawImage(gespiegelt(img), iw - sx1, sy0, sx1 - sx0, sy1 - sy0, b - 0.3, yo, a - b + 0.6, yu - yo);
+    const r = Math.max((yu - yo) / Math.max(0.5, sy1 - sy0), Math.abs(b - a) / Math.max(0.5, sx1 - sx0)) * dprJetzt;
+    const [m, k] = mipBild(img, r);
+    if (a <= b) g.drawImage(m, sx0 * k, sy0 * k, (sx1 - sx0) * k, (sy1 - sy0) * k, a - 0.3, yo, b - a + 0.6, yu - yo);
+    else {   // seitenverkehrt (Vorladen 29.10.2026: über die Transformation statt einer gespiegelten Kopie – eine Fassung weniger je Bild)
+      g.save(); g.translate(a + b, 0); g.scale(-1, 1);
+      g.drawImage(m, sx0 * k, sy0 * k, (sx1 - sx0) * k, (sy1 - sy0) * k, b - 0.3, yo, a - b + 0.6, yu - yo);
+      g.restore();
+    }
+  }
+  // Verkleinerungsstufen (29.10.2026, Einzelhäuser in hoher Auflösung): ab Maßstab < 0,55 die halbe, < 0,275 die Viertel-Fassung
+  // (einmal je Bild erzeugt, je Bild höchstens eine neue Stufe) – sonst flimmern/treppen ferne Fassaden. r = Ziel-/Quellpixel (Gerätepixel).
+  const MIP = new WeakMap();
+  let dprJetzt = 1, mipBudget = 0;   // höchstens eine neue Stufe je Bild erzeugen (sonst Ruckler, wenn viele Häuser zugleich erscheinen)
+  function mipBild(img, r) {
+    if (r >= 0.55 || W.einfach || W.glattAus) return [img, 1];
+    const stufe = r >= 0.275 ? 1 : 2;
+    let l = MIP.get(img);
+    if (!l) { l = [img]; MIP.set(img, l); }
+    const gross = (img.naturalWidth || img.width) > 600;
+    for (let i = l.length; i <= stufe; i++) {
+      if (gross && !vorFrei) { if (mipBudget <= 0) break; mipBudget--; }
+      const q = l[i - 1], w = Math.round((q.naturalWidth || q.width) / 2), h = Math.round((q.naturalHeight || q.height) / 2);
+      if (w < 24 || h < 24) break;
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const x = c.getContext('2d'); x.drawImage(q, 0, 0, w, h);   // genau 2:1 – bilinear mittelt 2×2 Pixel ('high' kostete ohne GPU 30–50 ms je Stufe)
+      l.push(c);
+    }
+    const s = Math.min(stufe, l.length - 1);
+    return [l[s], s === 0 ? 1 : s === 1 ? (l[1].width / (img.naturalWidth || img.width)) : (l[2].width / (img.naturalWidth || img.width))];
   }
   // Dachfläche nach hinten in waagerechten Streifen: Bildzeilen syE (Traufe, v = 0) bis syF (v = 1); je v Höhe h0→h1,
   // Entfernung z0→z1, Weltbreite xl0..xr0 (v = 0) nach xl1..xr1 (v = 1); Spalten sx0..sx1 liegen auf xl..xr
@@ -1048,13 +1099,104 @@
         const qa = o.seite > 0 ? 1 - ub : ua, qb = o.seite > 0 ? 1 - ua : ub;
         const zm = (za + zb) / 2, oben = ys(t.hoehe, zm), unten = ys(0, zm);
         if (nebel) g.globalAlpha = sichtAlpha(zm);
-        g.drawImage(img, Math.max(0, qa * iw), 0, Math.max(0.5, (qb - qa) * iw), ih, Math.min(Xa, Xb) - 0.35, oben, Math.abs(Xb - Xa) + 0.7, unten - oben);
+        const [m, k] = mipBild(img, (unten - oben) * dprJetzt / ih);   // senkrechter Maßstab wählt die Stufe
+        g.drawImage(m, Math.max(0, qa * iw) * k, 0, Math.max(0.5, (qb - qa) * iw) * k, ih * k, Math.min(Xa, Xb) - 0.35, oben, Math.abs(Xb - Xa) + 0.7, unten - oben);
       }
       Xa = Xb; za = zb;
     }
     if (nebel) g.globalAlpha = 1;
     // Fußschatten auf dem Gehweg entlang der Zeile (Vergleich Fable 29.10.2026): das Haus steht auf dem Boden statt davor zu schweben
     if (!t.rand && !W.einfach && !nacht && z1 < 80) quadBoden(Math.min(o.x, o.x - o.seite * 0.7), Math.max(o.x, o.x - o.seite * 0.7), z1, z2, 'rgba(0,0,0,.13)');
+  }
+  // ---------- Vorbereiten (Vorladen 29.10.2026, MZ: „Start und Hänger anders lösen“) ----------
+  // Die Fassungen der großen Bilder (Nacht/Regen/Schnee abgedunkelt, umgefärbte Seitenansichten, Brandwände, Fern-Stufen) entstanden
+  // bisher beim ersten Zeichnen – Hänger bis ca. 250 ms (4× gedrosselt bis 1s). Jetzt entstehen sie vorher: für die aktuelle und die
+  // nächste Situation (vorbereiten, aus spiel.js) und für jedes frisch geladene große Bild (BL_BILDER.vorbereiter – das Bild wird erst
+  // danach freigegeben, bis dahin zeichnet das Spiel die kleine Fassung). Je Arbeit eine Fassung; spiel.js ruft arbeiten(ms) in ruhigen
+  // Momenten (Startbild, Gebietskarte, Anfahrt, Auswertung) mit Zeitbudget, sonst höchstens eine Arbeit, wenn das Gerät schnell genug ist.
+  let vorFrei = false;                // während einer Arbeit: Budgets für Fern-Stufen und Abdunkeln aus
+  let zustaende = [];                 // [{ umg, nacht, regen, schnee }] aktuelle + nächste Situation(en)
+  let freigabe = [], allgemein = [];  // Arbeiten { key, f } – freigabe (frisch geladene große Bilder, danach fertig()) zuerst
+  const VB = { arbeiten: 0, ms: 0, max: 0, freigegeben: 0, lang: [] };   // Zähler für Messungen (BL_SZENE.vorbereitung)
+  const hexAus = wm => '#' + wm.map(v => Math.round(klemm(v, 0, 255)).toString(16).padStart(2, '0')).join('');
+  // alle Arbeiten für einen Zustand; nur = nur die, deren Ausgangsbild dieser Schlüssel ist
+  function zustandArbeiten(z, nur) {
+    const A = [], voll = k => (BI.voll ? BI.voll(k) : null), gibt = k => !!(BI.VORHANDEN && BI.VORHANDEN.includes(k));
+    const dazu = (key, f, art) => { if (!nur || nur === key) A.push({ key, f, art }); };
+    const stufen = (key, quelle) => { dazu(key, () => { const b = quelle(); if (b) mipBild(b, 0.5); }, 'mip1'); dazu(key, () => { const b = quelle(); if (b) mipBild(b, 0.2); }, 'mip2'); };
+    const f = z.nacht ? 0.7 : z.regen ? 0.6 : z.schnee ? 0.62 : 0.72;   // Schattenseite wie hausecke()
+    if (z.umg === 'stadt' || z.umg === 'wohngebiet') {
+      const pool = (BI.liste ? BI.liste('fassade/' + z.umg + '-') : []).concat(z.umg === 'wohngebiet' && gibt('hausseite/wohngebiet-garage') ? ['hausseite/wohngebiet-garage'] : []);
+      for (const key of pool) {
+        // Vorderansicht wie fassade(): nachts eigene Nachtfassung, sonst Regen/Schnee abgedunkelt
+        const kn = key + '-nacht', nachtDatei = z.nacht && gibt(kn), wurzel = nachtDatei ? kn : key;
+        const basis = () => { if (nachtDatei) return voll(kn); const i0 = voll(key); if (!i0) return null; return z.nacht ? bildDunkel(i0, 0.22) : z.regen ? bildDunkel(i0, 0.82) : z.schnee ? bildDunkel(i0, 0.88) : i0; };
+        dazu(wurzel, basis, 'basis'); stufen(wurzel, basis);
+        const G = GEBAEUDE[key.slice(key.indexOf('/') + 1)];
+        if (!G || key.startsWith('hausseite/')) continue;
+        for (const ende of ['L', 'R']) {
+          const E = Object.assign({ traufe: 0.72 }, G, G[ende] || {}), S = E.seite && SEITE[E.seite];
+          if (S) {
+            // Seitenansicht wie hausecke(): Nachtbild → umgefärbt → Mittelfarbe → (Brandwand) → Schattenseite abgedunkelt → Fern-Stufen
+            const hk = 'hausseite/' + E.seite, hkn = hk + '-nacht', hn = z.nacht && gibt(hkn), w = hn ? hkn : hk;
+            const roh = () => { const i = hn ? voll(hkn) : voll(hk); return i && z.nacht && !hn ? bildDunkel(i, 0.22) : i; };
+            const s0 = () => { let i = roh(); if (i && E.farbe) i = umgefaerbt(i, S, E.farbe, z.nacht); return i; };
+            // Umfärben in Teilschritten: die Arbeit meldet false, bis sie fertig ist, und kommt dann wieder vorn in die Schlange
+            if (E.farbe) dazu(w, () => { const i = roh(); return i ? umfaerbenWeiter(i, S, E.farbe, z.nacht, 3) : true; }, 'umf');
+            dazu(w, () => { const i = s0(); if (i) wandMittel(i, S); }, 'wand');
+            for (const brand of [false, true]) {
+              const q = () => { const i = s0(); if (!i) return null; return bildDunkel(brand ? brandFassung(i, S, hexAus(wandMittel(i, S))) : i, f); };
+              dazu(w, q, brand ? 'brand' : 'seite'); stufen(w, q);
+            }
+          } else {
+            // Code-Körper: Putz (Textur putz-hell eingefärbt) und Dachfläche
+            const kf = z.nacht ? 0.25 : f * 1.15, ms = BI.mass && BI.mass(key);
+            dazu('textur/putz-hell', () => { if (g && voll('textur/putz-hell')) putzMuster(E.putz || (ms && ms.farbe) || '#cbbca6', z.nacht ? 0.2 : f * 1.05); });
+            if (E.lage === 'laengs' || E.lage === 'walm') { const d = 'textur/dach-' + (E.dach || 'biber'); dazu(d, () => { if (voll(d)) dachBild(E.dach || 'biber', kf); }); }
+          }
+        }
+      }
+    } else if (RAND_PLAN[z.umg]) {
+      // Feld-, Wald-, Lärmschutz-Streifen wie fassade() mit t.rand: nachts 0,1, Regen 0,82, Schnee 0,88
+      const keys = [...new Set([].concat(...Object.values(RAND_PLAN[z.umg])).map(e => e[0]))];
+      for (const key of keys) {
+        const basis = () => { const i0 = voll(key); if (!i0) return null; return z.nacht ? bildDunkel(i0, 0.1) : z.regen ? bildDunkel(i0, 0.82) : z.schnee ? bildDunkel(i0, 0.88) : i0; };
+        dazu(key, basis); stufen(key, basis);
+      }
+    }
+    return A;
+  }
+  // spiel.js: Zustände der aktuellen und der nächsten Situation(en) – baut die allgemeine Arbeitsliste neu (Erledigtes kostet nichts)
+  function vorbereiten(liste) {
+    zustaende = (liste || []).filter(Boolean);
+    allgemein = [];
+    zustaende.forEach(z => { allgemein.push(...zustandArbeiten(z)); });
+    // Ebene der Licht-/Wetter-Überblendung schon jetzt anlegen (sonst beim ersten Bild der Überblendung)
+    if (zustaende.length > 1) allgemein.push({ key: '', f: () => { if (g && L) inEbene(() => {}, 0, { x: 0, y: 0, w: L.B, h: L.armaturen + 4 }); } });
+  }
+  // bilder.js meldet ein frisch geladenes, entpacktes großes Bild: erst seine Fassungen für die geplanten Zustände, dann freigeben
+  if (BI) BI.vorbereiter = (k, img, fertig) => {
+    zustaende.forEach(z => { freigabe.push(...zustandArbeiten(z, k).map(a => Object.assign(a, { frei: true }))); });
+    freigabe.push({ key: k, f: () => { VB.freigegeben++; fertig(); } });
+  };
+  // Arbeiten erledigen, bis ms verbraucht sind (mindestens eine, wenn ms > 0); gibt die Zahl offener Arbeiten zurück
+  function arbeiten(ms) {
+    if (!(ms > 0) || (!freigabe.length && !allgemein.length)) return freigabe.length + allgemein.length;
+    const t0 = performance.now();
+    vorFrei = true;
+    try {
+      do {
+        const a = freigabe.length ? freigabe.shift() : allgemein.shift();
+        if (!a) break;
+        const t1 = performance.now();
+        let fertig = true;
+        try { fertig = a.f() !== false; } catch (e) { /* Bild nicht lesbar – überspringen */ }
+        if (!fertig) (freigabe.includes(a) || a.frei ? freigabe : allgemein).unshift(a);
+        const d = performance.now() - t1;
+        if (d > 0.3) { VB.arbeiten++; VB.ms += d; VB.max = Math.max(VB.max, d); if (d > 12 && VB.lang.length < 40) VB.lang.push((a.art || '') + ' ' + a.key + ' ' + d.toFixed(0)); }
+      } while (performance.now() - t0 < ms);
+    } finally { vorFrei = false; }
+    return freigabe.length + allgemein.length;
   }
   // Brücke quer über die Autobahn (Bogen Autobahn 1): Ebene quer zur Fahrtrichtung, Öffnung mittig über beiden Fahrbahnen
   function bruecke(o, z) {
@@ -2064,7 +2206,9 @@
   }
   // Schnee: Flocken fallen vor der Scheibe
   const flocken = [];
+  let bildNr = 0, flockenBild = -1, tropfenBild = -1;   // Überblendung: Teilchen nur einmal je Bild bewegen (Welt wird dann zweimal gezeichnet)
   function schneefall(dt) {
+    if (flockenBild === bildNr) dt = 0; flockenBild = bildNr;
     while (flocken.length < (W.einfach ? 30 : 90)) flocken.push({ x: Math.random(), y: Math.random(), r: 0.8 + Math.random() * 2, v: 0.15 + Math.random() * 0.25 });
     g.fillStyle = 'rgba(250,250,252,.85)';
     for (const f of flocken) {
@@ -2089,6 +2233,7 @@
   // Regentropfen auf der Scheibe (nicht im einfachen Modus) und Scheibenwischer
   const tropfen = [];
   function regen(dt) {
+    if (tropfenBild === bildNr) dt = 0; tropfenBild = bildNr;
     const t = performance.now() / 1000, periode = 1.7, dauer = 1.1;
     const p = (t % periode), w = p < dauer ? Math.sin(p / dauer * Math.PI) : 0;   // 0 = unten, 1 = oben
     const winkel = 0.12 + w * 1.25;
@@ -2218,7 +2363,8 @@
         const u0 = ((d0 + versatz) % lang) / lang, u1 = u0 + (d1 - d0) / lang;
         const xa = px(x, d0), xb = px(x, d1), top = py(ms.h, (d0 + d1) / 2), bot = py(0, (d0 + d1) / 2);
         const qa = x > 0 ? u0 : 1 - Math.min(1, u1), qb = x > 0 ? Math.min(1, u1) : 1 - u0;
-        if (qb - qa > 0.002) g.drawImage(img, qa * iw, 0, (qb - qa) * iw, ih, Math.min(xa, xb) - 0.3, top, Math.abs(xb - xa) + 0.6, bot - top);
+        // Fern-Stufe wie bei den Fassaden (Vorladen 29.10.2026: im Spiegel kostete das große Bild 4× gedrosselt ca. 100 ms je Sekunde)
+        if (qb - qa > 0.002) { const [m, k] = mipBild(img, (bot - top) * dprJetzt / ih); g.drawImage(m, qa * iw * k, 0, (qb - qa) * iw * k, ih * k, Math.min(xa, xb) - 0.3, top, Math.abs(xb - xa) + 0.6, bot - top); }
       }
     };
     if (stadtArt && BI.liste) {
@@ -2280,12 +2426,12 @@
     // Innenspiegel
     const sp = L.spiegelInnen;
     g.fillStyle = '#121315'; g.beginPath(); g.roundRect(sp.x - 4, sp.y - 4, sp.w + 8, sp.h + 8, sp.h * 0.45); g.fill();
-    spiegelInhalt(sp, 'innen');
+    spiegelMitUebergang(sp, 'innen');
     glanzSpiegel(sp, W.spiegel.innen);
     // Außenspiegel
     for (const [r, art] of [[L.spiegelL, 'links'], [L.spiegelR, 'rechts']]) {
       g.fillStyle = '#1b1d20'; g.beginPath(); g.roundRect(r.x - 3, r.y - 3, r.w + 6, r.h + 6, 8); g.fill();
-      spiegelInhalt(r, art);
+      spiegelMitUebergang(r, art);
       glanzSpiegel(r, W.spiegel[art]);
     }
     // Doppelbremse: Fahrlehrer lehnt herein (sitzt im Auto, verdeckt also den rechten Außenspiegel)
@@ -2635,7 +2781,7 @@
 
   // ---------- Hauptfunktion ----------
   // Abbiegen (Phase 2b): beim Wechsel auf die neue Straße das letzte Bild festhalten und kurz weiterschwenkend ausblenden
-  let schnapp = null, schnappT = 0, schnappSeite = 0;
+  let schnapp = null, schnappT = 0, schnappSeite = 0, schnappDauer = 0;   // schnappDauer: eigene Dauer (Übergang einfach), sonst Abbiegen
   function abbiegenUeberblenden(dt) {
     if (W.drehWechsel) {
       W.drehWechsel = false;
@@ -2643,33 +2789,57 @@
       try {
         if (!schnapp) schnapp = document.createElement('canvas');
         schnapp.width = c.width; schnapp.height = c.height; schnapp.getContext('2d').drawImage(c, 0, 0);
-        schnappT = 1; schnappSeite = W.dreh ? W.dreh.seite : 0;
+        schnappT = 1; schnappSeite = W.dreh ? W.dreh.seite : 0; schnappDauer = 0;
       } catch (e) { schnappT = 0; }
     }
   }
   function ueberblendungZeichnen(dt) {
     if (schnappT <= 0 || !schnapp) return;
-    schnappT = Math.max(0, schnappT - (dt || 0.016) / (W.ruhig ? 0.6 : 0.4));
+    schnappT = Math.max(0, schnappT - (dt || 0.016) / (schnappDauer || (W.ruhig ? 0.6 : 0.4)));
     const k = g.canvas.width / L.B;
     g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = schnappT * schnappT * (3 - 2 * schnappT);
     g.drawImage(schnapp, -schnappSeite * L.B * (W.ruhig ? 0.1 : 0.3) * (1 - schnappT) * k, 0);
     g.restore();
   }
-  function zeichne(ctx, welt, lay, dt, dpr) {
-    g = ctx; W = welt; L = lay;
-    abbiegenUeberblenden(dt);
-    auge = W.auge || 1.2;
-    kx = W.kx; K = W.kurve || 0;
-    const ruck = W.ruhig ? 0 : W.ruck || 0;
-    const wack = ruck > 0 ? Math.sin(performance.now() / 22) * 7 * ruck : 0;
-    mitte = L.B / 2 + (W.gier || 0);
-    hz = L.hz + (W.nicken || 0) + wack * 0.6;
-    f = Math.max((L.armaturen + 8 - L.hz) * NAH / auge, L.B * 0.85);
-    zFern = W.umgebung === 'autobahn' ? 420 : W.umgebung === 'land' ? 340 : 200;
+  // ---------- Tag/Nacht- und Wetter-Übergang (29.10.2026) ----------
+  // spiel.js setzt W.uebergang = { von: { wetter, wetterArt, regen, schnee, licht, sicht, sichtWeite }, p 0…1 }, wenn Licht oder Wetter
+  // zwischen zwei Situationen wechseln. Dann wird die Welt zweimal gezeichnet: erst mit dem alten Zustand, darüber in einer eigenen Ebene
+  // mit dem neuen, deren Deckkraft weich von 0 auf 1 steigt (Himmel, Helligkeit, Fassaden Tag → Nachtbild, Laternen, Scheinwerfer,
+  // Regen/Schnee/Nebel). Nur während der Überblendung doppelt. W.einfach: einmal den alten Zustand festhalten und kurz ausblenden.
+  const UEB_FELDER = ['wetter', 'wetterArt', 'regen', 'schnee', 'licht', 'sicht', 'sichtWeite'];
+  function mitZustand(z, fn) {
+    const alt = {};
+    for (const k of UEB_FELDER) { alt[k] = W[k]; W[k] = z[k]; }
+    try { fn(); } finally { for (const k of UEB_FELDER) W[k] = alt[k]; }
+  }
+  // fn in eine eigene Ebene zeichnen (gleiche Transformation, Ausschnitt r in CSS-Pixeln) und mit Deckkraft a auf g legen.
+  // Vorladen 29.10.2026: je Ausschnitt (Welt, drei Spiegel) eine eigene Ebene in genau dieser Größe – vorher eine bildschirmgroße für alle,
+  // deren Kopie beim Auflegen 4× gedrosselt ca. 170 ms je Sekunde kostete.
+  const ebenen = new Map();
+  function inEbene(fn, a, r) {
+    const c = g.canvas;
+    const T = g.getTransform(), k = c.width / L.B;
+    const dx = Math.max(0, Math.floor(r.x * k + Math.min(0, T.e) - 2)), dy = Math.max(0, Math.floor(r.y * k - 2));
+    const dw = Math.min(c.width - dx, Math.ceil(r.w * k + 4 + Math.abs(T.e))), dh = Math.min(c.height - dy, Math.ceil(r.h * k + 4));
+    if (dw <= 0 || dh <= 0) return;
+    const schl = Math.round(r.x) + '|' + Math.round(r.y) + '|' + Math.round(r.w) + '|' + Math.round(r.h);
+    let e = ebenen.get(schl);
+    if (!e) { if (ebenen.size > 8) ebenen.clear(); e = { c: document.createElement('canvas') }; ebenen.set(schl, e); }
+    if (e.c.width !== dw || e.c.height !== dh) { e.c.width = dw; e.c.height = dh; e.g = null; }
+    if (!e.g) e.g = e.c.getContext('2d');
+    const eg = e.g;
+    eg.setTransform(1, 0, 0, 1, 0, 0); eg.clearRect(0, 0, dw, dh);
+    eg.setTransform(T.a, T.b, T.c, T.d, T.e - dx, T.f - dy);
+    eg.save(); eg.beginPath(); eg.rect(r.x, r.y, r.w, r.h); eg.clip();
+    const gAlt = g; g = eg;
+    try { fn(); } finally { g = gAlt; eg.restore(); }
+    g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = a; g.drawImage(e.c, 0, 0, dw, dh, dx, dy, dw, dh); g.restore();
+  }
+  const glatt = p => p * p * (3 - 2 * p);
+  function uebergangAnteil() { const u = W.uebergang; return u && u.von && u.p < 1 ? glatt(Math.max(0, u.p)) : null; }
+  // Welt durch die Windschutzscheibe (ohne Cockpit)
+  function welt(dt) {
     lichter = [];
-    g.save();
-    if (wack) g.translate(wack * 0.4, 0);
-    g.save(); g.beginPath(); g.rect(0, 0, L.B, L.armaturen + 4); g.clip();
     himmel();
     boden();
     const liste = [];
@@ -2687,6 +2857,54 @@
     if (W.schnee) schneefall(dt);
     if (W.wetter === 'regen' || W.regen || W.wischer) regen(dt);
     scheibeOverlay();
+  }
+  function weltMitUebergang(dt) {
+    const u = W.uebergang, a = uebergangAnteil();
+    if (a == null) { welt(dt); return; }
+    if (W.einfach) {
+      // schwache Geräte: einmal den alten Zustand zeichnen, festhalten und über 1,2s (ruhig 0,8s) ausblenden – danach nur noch einfach
+      if (!u.festgehalten) {
+        u.festgehalten = true;
+        mitZustand(u.von, () => welt(dt));
+        try {
+          if (!schnapp) schnapp = document.createElement('canvas');
+          schnapp.width = g.canvas.width; schnapp.height = g.canvas.height; schnapp.getContext('2d').drawImage(g.canvas, 0, 0);
+          schnappT = 1; schnappSeite = 0; schnappDauer = W.ruhig ? 0.8 : 1.2;
+        } catch (e) { schnappT = 0; }
+      }
+      welt(dt);
+      return;
+    }
+    mitZustand(u.von, () => welt(dt));                                        // alter Zustand (Licht/Wetter der vorigen Situation)
+    inEbene(() => welt(dt), a, { x: 0, y: 0, w: L.B, h: L.armaturen + 4 });   // neuer Zustand darüber, Deckkraft wächst
+  }
+  // Spiegel: Inhalt ebenso überblenden (kleine Ebene)
+  function spiegelMitUebergang(r, art) {
+    const u = W.uebergang, a = uebergangAnteil();
+    if (a == null) { spiegelInhalt(r, art); return; }
+    if (W.einfach) { if (a < 0.5) mitZustand(u.von, () => spiegelInhalt(r, art)); else spiegelInhalt(r, art); return; }
+    mitZustand(u.von, () => spiegelInhalt(r, art));
+    inEbene(() => spiegelInhalt(r, art), a, { x: r.x - 2, y: r.y - 2, w: r.w + 4, h: r.h + 4 });
+  }
+  function zeichne(ctx, welt_, lay, dt, dpr) {
+    g = ctx; W = welt_; L = lay; bildNr++;
+    // Einzelhäuser (29.10.2026): imageSmoothingQuality 'high' geprüft und verworfen – die Fassaden werden in schmalen senkrechten
+    // Streifen gezeichnet (stark waagerecht gestaucht), Chrome wählt dann eine zu kleine Mipmap → ganze Zeile verschwommen.
+    // Stattdessen eigene Verkleinerungsstufen (mipBild) nach dem senkrechten Maßstab.
+    dprJetzt = g.getTransform().a || 1; mipBudget = 1; dunkelBudget = 2;
+    abbiegenUeberblenden(dt);
+    auge = W.auge || 1.2;
+    kx = W.kx; K = W.kurve || 0;
+    const ruck = W.ruhig ? 0 : W.ruck || 0;
+    const wack = ruck > 0 ? Math.sin(performance.now() / 22) * 7 * ruck : 0;
+    mitte = L.B / 2 + (W.gier || 0);
+    hz = L.hz + (W.nicken || 0) + wack * 0.6;
+    f = Math.max((L.armaturen + 8 - L.hz) * NAH / auge, L.B * 0.85);
+    zFern = W.umgebung === 'autobahn' ? 420 : W.umgebung === 'land' ? 340 : 200;
+    g.save();
+    if (wack) g.translate(wack * 0.4, 0);
+    g.save(); g.beginPath(); g.rect(0, 0, L.B, L.armaturen + 4); g.clip();
+    weltMitUebergang(dt);
     ueberblendungZeichnen(dt);
     g.restore();
     cockpit(dpr);
@@ -2700,5 +2918,6 @@
   // Bildschirmlage eines Weltpunkts (für Tipp-Prüfung und Hinweise)
   function bildpunkt(x, pos, h) { const z = pos - W.s; return z > 0.5 ? [xs(x, z), ys(h || 0, z)] : null; }
 
-  window.BL_SZENE = { layout, zeichne, bildpunkt, NAH, AUTO, kennzeichen, doppelKasten };
+  window.BL_SZENE = { layout, zeichne, bildpunkt, NAH, AUTO, kennzeichen, doppelKasten, vorbereiten, arbeiten,
+    offen: () => freigabe.length + allgemein.length, vorbereitung: VB };
 })();

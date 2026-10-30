@@ -188,9 +188,30 @@
     else soll = fahrtSoll();
     schleifenSetzen();
   }
+  // Klang-Überblendung (29.10.2026, MZ): wechseln Gebiet, Licht oder Wetter, laufen Atmo, Regen und Wind über dieselbe Zeit wie das Bild
+  // (3,5s, ruhig 1,5s) weich aus bzw. ein. spiel.js meldet dazu ueb = { von (Gebiet/Wetter vorher), a (0 → 1, weich wie das Bild) };
+  // der Pegel jeder dieser Schleifen ist dann (1 − a) · alt + a · neu. Motor, Rollen und kurze Klänge (Blinker, Bestätigung) unverändert.
+  const WEICH = ['atmo-stadt', 'atmo-schule', 'atmo-land', 'atmo-autobahn', 'regen-dach', 'wind'];
   function fahrtSoll() {
-    const s = {};
     const f = fahrt;
+    if (!f || !f.ueb) return fahrtSollFuer(f);
+    const neu = fahrtSollFuer(f), alt = fahrtSollFuer(Object.assign({}, f, f.ueb.von)), a = Math.max(0, Math.min(1, f.ueb.a));
+    for (const n of WEICH) {
+      const p = (1 - a) * (alt[n] ? alt[n].p : 0) + a * (neu[n] ? neu[n].p : 0);
+      if (p > 0.003) neu[n] = { p, ein: 0.3, zeit: 0.12 }; else delete neu[n];
+    }
+    return neu;
+  }
+  // nass (Wischer): Anteil 0…1, während der Überblendung gemischt
+  const nassVon = f => (f.wetter === 'regen' || f.regen ? 1 : 0);
+  function wischAnteil(f) {
+    if (f.wischer) return 1;
+    if (!f.ueb) return nassVon(f);
+    const a = Math.max(0, Math.min(1, f.ueb.a));
+    return (1 - a) * nassVon(Object.assign({}, f, f.ueb.von)) + a * nassVon(f);
+  }
+  function fahrtSollFuer(f) {
+    const s = {};
     if (!f) return s;
     // Motor: Leerlauf (1k) und Fahrt (4k) überblendet, Tonhöhe steigt mit dem Tempo; beim Gasgeben etwas lauter
     const x = Math.max(0, Math.min(1, f.v / 36));
@@ -228,12 +249,12 @@
     spielen(wahl, { seite: (Math.random() * 2 - 1) * 0.7, nachladen: true });
   }
   function wischen() {
-    const f = fahrt;
-    if (!(f.wetter === 'regen' || f.regen || f.wischer)) { wischNaechst = 0; return; }
+    const f = fahrt, anteil = wischAnteil(f);
+    if (anteil < 0.05) { wischNaechst = 0; return; }
     const jetzt = performance.now() / 1000;
     if (!wischNaechst) wischNaechst = (Math.floor(jetzt / WISCH_PERIODE) + 1) * WISCH_PERIODE;   // im Takt der Zeichnung
     if (jetzt >= wischNaechst - 0.06) {
-      spielen('wischer', { rate: 1.3, verzoegerung: Math.max(0, wischNaechst - jetzt), faktor: f.v < 1 ? 0.8 : 1 });
+      spielen('wischer', { rate: 1.3, verzoegerung: Math.max(0, wischNaechst - jetzt), faktor: (f.v < 1 ? 0.8 : 1) * anteil });
       wischNaechst += WISCH_PERIODE;
       if (wischNaechst < jetzt) wischNaechst = (Math.floor(jetzt / WISCH_PERIODE) + 1) * WISCH_PERIODE;
     }
@@ -283,6 +304,7 @@
       soll = fahrtSoll();
       schleifenSetzen();
     },
-    zustand() { return { szene, an: tonAn, ac: ac ? ac.state : null, schleifen: Object.keys(lauf), geladen: Object.keys(puffer).filter(n => puffer[n]) }; },
+    zustand() { return { szene, an: tonAn, ac: ac ? ac.state : null, schleifen: Object.keys(lauf), geladen: Object.keys(puffer).filter(n => puffer[n]),
+      pegel: Object.fromEntries(Object.entries(lauf).map(([n, l]) => [n, +l.v.gain.value.toFixed(3)])), ueb: fahrt && fahrt.ueb ? +fahrt.ueb.a.toFixed(2) : null }; },
   };
 })();

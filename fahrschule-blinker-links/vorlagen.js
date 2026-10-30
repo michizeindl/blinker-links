@@ -73,7 +73,9 @@ window.BL_VORLAGEN = function (H) {
       if (p.einbahn) { W.einbahn = true; R.keinGegenverkehr = true; }
       if (p.ohneGegen) R.keinGegenverkehr = true;
       if (p.zebra) { H.mark({ art: 'zebra', pos: K - 1.5, x0: W.einbahn ? -4.9 : -4.9 }); H.schild('zebra', K - 4, rand() + 0.4); }
-      if (p.parker) [-24, -12.5, 3].forEach(d => H.dazu(H.auto(K + d, parkX())));
+      // Parker (S021, S033, S096): Lücke an der Querungsstelle – das nähere Auto endet ca. 9,7 m vor K, das fernere beginnt 2,4 m dahinter
+      // (29.10.2026, S033: Person stand sonst in einer Linie hinter dem näheren Auto und war erst spät zu sehen)
+      if (p.parker) [-25.5, -14, 2.4].forEach(d => H.dazu(H.auto(K + d, parkX())));
       if (p.einmuendung) H.mark({ art: 'einmuendung', pos: K + 3, seiten: 'rechts' });
       let deck = null;
       if (p.deckung) { const d = p.deckung; deck = R.deck = H.dazu(H.auto(K + (d.dz || -8), d.x, { art: d.art, richtung: d.richtung || 1, licht: { warn: !!d.warn }, rundum: d.rundum })); }

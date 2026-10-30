@@ -24,6 +24,7 @@
     stufe: hw('stufe'), situation: hw('situation'), anzahl: hw('anzahl') ? Math.max(1, Math.min(10, +hw('anzahl') || 10)) : 10,
     kreuzung: hw('kreuzung') != null, los: hw('los') != null, tempo: Math.max(0.25, Math.min(4, +(hw('tempo') || 1) || 1)),
     wetter: hw('wetter'), ende: hw('ende'), abzug: hw('abzug'), doppel: hw('doppel'), tipp: hw('tipp'), abbruch: hw('abbruch') != null, einfach: hw('einfach') != null, fps: hw('fps') != null, frei: hw('frei') != null, best: hw('best'),
+    von: hw('von'),   // Tag/Nacht-Übergang testen (29.10.2026): #situation=S082&von=klar = so tun, als käme man aus einer Tag-Situation
   };
   const ruhig = BB.ruhig();
   function sitzungLesen(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
@@ -43,6 +44,35 @@
     if (!l.length) return '';
     if (!offen[anlass] || !offen[anlass].length) offen[anlass] = l.slice().sort(() => zufall() - 0.5);
     return offen[anlass].pop().text;
+  }
+  // Wetter-Sprüche (29.10.2026, Anlass: bei Regen kam ein Nebel-Spruch): nur Sprüche, deren Feld „Wetter“ zur Situation passt
+  // (wetterWerte), sonst ein Spruch mit „alle“; je Wert ohne Wiederholung, bis alle passenden durch sind.
+  const wetterGezeigt = new Set();
+  function wetterWerte(def) {
+    const fest = D.WETTER_SPRUCH && D.WETTER_SPRUCH[def.id];
+    if (fest) return fest;
+    const w = W.wetterArt, l = [], stoff = st => W.markierungen.some(m => m.stoff === st);
+    if (w === 'nacht' || w === 'nachtregen' || w === 'daemmerung') l.push('nacht');
+    if (w === 'regen' || w === 'niesel' || w === 'nachtregen') l.push('regen');
+    if (w === 'nebel') l.push('nebel');
+    if (w === 'schnee') l.push('schnee');
+    if (w === 'abend') l.push('blendung');
+    if (stoff('glaette')) l.push('glaette');
+    if (stoff('wasser') || stoff('pfuetze')) l.push('nass');
+    return l;
+  }
+  function wetterSpruch(werte) {
+    const l = SPRUECHE.wetter || [];
+    const hat = (s, w) => Array.isArray(s.wetter) && s.wetter.includes(w);
+    let pool = werte.includes('alle') ? [] : l.filter(s => werte.some(w => w !== 'alle' && hat(s, w)));
+    if (!pool.length) pool = l.filter(s => hat(s, 'alle'));
+    if (!pool.length) pool = l.filter(s => !Array.isArray(s.wetter));   // alter Text ohne Feld Wetter
+    if (!pool.length) return '';
+    let frei = pool.filter(s => !wetterGezeigt.has(s.id || s.text));
+    if (!frei.length) { pool.forEach(s => wetterGezeigt.delete(s.id || s.text)); frei = pool; }
+    const s = frei[Math.floor(zufall() * frei.length)];
+    wetterGezeigt.add(s.id || s.text);
+    return s.text;
   }
   const RT = k => TX && TX.rahmen && TX.rahmen[k] ? TX.rahmen[k].Text || TX.rahmen[k].Titel || '' : '';
   const abbruchBand = RT('ABBRUCH_BAND') || D.TEXTE.abbruchBand;
@@ -104,6 +134,7 @@
     objekte: [], schilder: [], markierungen: [], sperren: [], hinten: [], blinker: null, bremse: false, lenk: 0, warn: false, licht: 'tag',
     spiegel: { innen: 9, links: 9, rechts: 9 }, schulter: null, hilfe: null, fuss: 0, ruck: 0, blitz: 0, doppel: 0, zeigeDoppel: false,
     einfach: TEST.einfach || sitzungLesen('mg:blinker-links:einfach') === '1', ruhig, zielV: 0, auge: FZ.augenhoehe, tachoMax: 200,
+    glattAus: hw('glattaus') != null,   // Testhilfe #glattaus: Bilder ohne imageSmoothingQuality 'high' (Vergleich, 29.10.2026)
   };
 
   // ---------- Fahrt ----------
@@ -141,18 +172,26 @@
     const liste = [];
     const nachAbschnitt = {}; gewaehlt.forEach(s => { (nachAbschnitt[abschnitt(s)] = nachAbschnitt[abschnitt(s)] || []).push(s); });
     reihe.forEach((g, i) => { const l = nachAbschnitt[g] || [], vorkommen = reihe.filter(x => x === g).length, k = reihe.slice(0, i).filter(x => x === g).length; const teil = Math.ceil(l.length / vorkommen); liste.push(...l.slice(k * teil, (k + 1) * teil)); });
-    // Kreuzung eingestreut (nicht ganz vorn), zuletzt gespielte Kreuzungen meiden
+    // Tagesablauf (29.10.2026, Spielertest „Nacht → Tag sprunghaft“): innerhalb einer Fahrt nie von Nacht zurück zu Tag – helle
+    // Situationen zuerst, Abendsonne/Dämmerung dazwischen, Nacht am Schluss. Stabil sortiert: innerhalb einer Stufe bleibt die Routen-Reihenfolge.
+    liste.sort((a, b) => lichtStufe(a) - lichtStufe(b));
+    const tagEnde = (i => i < 0 ? liste.length : i)(liste.findIndex(s => lichtStufe(s) > 0));
+    // Kreuzung eingestreut (nicht ganz vorn, immer bei Tag), zuletzt gespielte Kreuzungen meiden
     const kr = KREUZ.filter(k => k.stufe <= nr), krFrisch = misch(kr.filter(k => !merk.k.includes(k.id)));
     for (let i = 0; i < RT_.kreuzungen && kr.length; i++) {
       const k = krFrisch[i] || misch(kr)[0];
-      // an die Stelle mit passendem Abschnitt (Feldweg aufs Land, sonst in Stadt/Wohngebiet), sonst irgendwo ab Platz 3
-      let at = liste.findIndex((s, j) => j >= 2 && abschnitt(s) === k.gebiet);
-      if (at < 0) at = liste.findIndex((s, j) => j >= 2 && (abschnitt(s) === 'innenstadt' || abschnitt(s) === 'schule'));
-      if (at < 0) at = 2 + Math.floor(rnd() * Math.max(1, liste.length - 2));
+      // an die Stelle mit passendem Abschnitt (Feldweg aufs Land, sonst in Stadt/Wohngebiet), sonst irgendwo ab Platz 3 – jeweils vor der ersten Dämmerung/Nacht
+      const vorn = Math.min(2, tagEnde);
+      let at = liste.findIndex((s, j) => j >= vorn && j <= tagEnde && abschnitt(s) === k.gebiet);
+      if (at < 0) at = liste.findIndex((s, j) => j >= vorn && j <= tagEnde && (abschnitt(s) === 'innenstadt' || abschnitt(s) === 'schule'));
+      if (at < 0) at = Math.min(tagEnde, vorn + Math.floor(rnd() * Math.max(1, tagEnde - vorn + 1)));
       liste.splice(at, 0, k);
     }
     return { reihe, liste };
   }
+  // Helligkeit einer Situation: 0 Tag (auch Regen, Nebel, Schnee, Glätte …), 1 Abendsonne, 2 Dämmerung, 3 Nacht
+  const LICHT_STUFE = { abend: 1, daemmerung: 2, nacht: 3, nachtregen: 3 };
+  function lichtStufe(s) { return LICHT_STUFE[s.wetter || (s.gebiet === 'nacht' ? 'nacht' : 'klar')] || 0; }
   function fahrtListe() {
     const nr = STUFE_NR[stufe] || 1;
     const fest = hw('route') != null && hw('route') !== '';
@@ -171,12 +210,23 @@
     m.s = m.s.slice(-D.ROUTE.merken); m.k = m.k.slice(-D.ROUTE.merkenKreuzung);
     BB.schreiben(MERK, JSON.stringify(m));
   }
+  // Vorladen (29.10.2026): die Route steht schon im Startbild fest (planen), damit die Bilder der ersten Situationen laden, während
+  // der Spieler liest; „Los geht's“ übernimmt sie. Im Endbild wird die nächste Fahrt („Nochmal“) ebenso geplant.
+  let geplant = null;
+  function planen(n) {
+    geplant = { stufe, liste: fahrtListe(), route: W.route };
+    for (let i = 0; i < Math.min(n || 3, geplant.liste.length); i++) bilderLaden(geplant.liste[i], false);
+    SZ.vorbereiten && SZ.vorbereiten([sichtPlan(geplant.liste[0])]);
+  }
   function fahrtNeu() {
-    F = { liste: fahrtListe(), idx: -1, kartenNeu: [], punkte: 0, abzug: 0, doppel: 0, rts: [], bereiche: {}, fehler: [], karten: [], schulterOk: 0, schulterAlle: 0,
+    const plan = geplant && geplant.stufe === stufe ? geplant : null;
+    geplant = null;
+    if (plan) W.route = plan.route;
+    F = { liste: plan ? plan.liste : fahrtListe(), idx: -1, kartenNeu: [], punkte: 0, abzug: 0, doppel: 0, rts: [], bereiche: {}, fehler: [], karten: [], schulterOk: 0, schulterAlle: 0,
       start: zeit, phase: 'titel', wartet: 0, sitPunkte: [], fehlalarmZeit: -9, abbruch: false };
     D.BEREICHE.forEach(b => { F.bereiche[b] = { ist: 0, max: 0 }; });
     kopfWert = kopfZiel = 0;
-    W.doppel = 0; W.dbWarn = 0; W.zeigeDoppel = true; W.fuss = 0; W.ruck = 0; W.blitz = 0; W.rand = []; W.randAb = 1; W.kreis = null;
+    W.doppel = 0; W.dbWarn = 0; W.zeigeDoppel = true; W.fuss = 0; W.ruck = 0; W.blitz = 0; W.rand = []; W.randAb = 1; W.kreis = null; W.uebergang = null;
     merken(F.liste);
   }
 
@@ -390,7 +440,13 @@
     W.sichtWeite = (D.WETTER[W.wetterArt] || D.WETTER.klar).sicht;
     W.sicht = W.wetter === 'nebel' ? W.sichtWeite : W.sichtWeite;
   }
+  // Tag/Nacht- und Wetter-Übergang (29.10.2026): Felder, die szene.js für Licht und Wetter liest
+  const SICHT_FELDER = ['wetter', 'wetterArt', 'regen', 'schnee', 'licht', 'sicht', 'sichtWeite'];
+  function sichtZustand() { const z = {}; SICHT_FELDER.forEach(k => { z[k] = W[k]; }); return z; }
+  const sichtSchluessel = z => z.wetter + '|' + !!z.regen + '|' + !!z.schnee;   // Niesel ↔ Regen sieht gleich aus: kein Übergang
   function situationStarten(def) {
+    // Klang-Überblendung (29.10.2026): Zustand vor dem Wechsel merken (Gebiet, Licht, Wetter)
+    const klangVon = R && F.idx > 0 ? { umgebung: W.umgebung, gebiet: R.def.gebiet, wetter: W.wetter, wetterArt: W.wetterArt, regen: W.regen, schnee: W.schnee } : null;
     W.objekte = []; W.schilder = []; W.markierungen = []; W.sperren = []; W.hinten = [];
     W.blinker = null; W.hilfe = null; W.schulter = null; W.kxZiel = 0; W.kx = Math.abs(W.kx) > 1 ? 0 : W.kx;
     W.warn = false; W.anzeige = null; W.blendung = null; W.beschlag = 0; W.schmutz = 0; W.wischer = false; W.tunnel = 0; W.tunnelLage = null; W.ueberholverbot = false;
@@ -398,9 +454,24 @@
     const p = def.p || {}, geb = D.GEBIETE[def.gebiet] || D.GEBIETE.land;
     W.umgebung = p.umgebung || geb.umgebung; W.spuren = p.spuren || 2;
     // Testhilfe #wetter=nacht|regen|… (Tunnel innen 29.10.2026: Ausfahrt nachts prüfen) – nur mit #situation
+    // Licht/Wetter der vorigen Situation merken (Übergang, 29.10.2026); Testhilfe #von=<wetter> nur für die erste Situation mit #situation
+    let von = F.idx > 0 && R ? sichtZustand() : null;
+    if (!von && F.idx === 0 && TEST.situation && TEST.von) { wetterSetzen(TEST.von); W.licht = W.wetter === 'nacht' ? 'abblend' : 'tag'; von = sichtZustand(); }
     wetterSetzen((TEST.situation && TEST.wetter) || def.wetter || (def.gebiet === 'nacht' ? 'nacht' : 'klar'));
     bilderVorrang();
     W.licht = p.licht || (W.wetter === 'nacht' ? 'abblend' : 'tag');
+    // Wechseln Tageslicht oder Wetter, blendet szene.js über ca. 3,5s weich über (ruhig 1,5s), sobald die Gebietskarte weg ist.
+    // Die Mechanik (Sicht, Haftung) gilt ab Beginn der Situation; startet Vorzeichen/Gefahr früher, endet die Überblendung in 0,6s (situationSchritt).
+    W.uebergang = von && sichtSchluessel(von) !== sichtSchluessel(W) ? { von, t: 0, p: 0, dauer: ruhig ? 1.5 : 3.5 } : null;
+    // Überblendung: der alte Zustand wird mit dem neuen Gebiet gezeichnet – auch dafür die Fassungen vorbereiten (vor dem neuen)
+    if (W.uebergang && SZ.vorbereiten) {
+      const v = W.uebergang.von;
+      SZ.vorbereiten([{ umg: W.umgebung, nacht: v.wetter === 'nacht', regen: !!(v.wetter === 'regen' || v.regen), schnee: !!v.schnee },
+        { umg: W.umgebung, nacht: W.wetter === 'nacht', regen: !!(W.wetter === 'regen' || W.regen), schnee: !!W.schnee }, sichtPlan(F.liste[F.idx + 1])]);
+    }
+    const kv = klangVon || (von ? { umgebung: W.umgebung, gebiet: def.gebiet, wetter: von.wetter, wetterArt: von.wetterArt, regen: von.regen, schnee: von.schnee } : null);
+    F.klangUeb = kv && (kv.umgebung !== W.umgebung || kv.gebiet !== def.gebiet || kv.wetter !== W.wetter || kv.wetterArt !== W.wetterArt || !!kv.regen !== !!W.regen || !!kv.schnee !== !!W.schnee)
+      ? { von: kv, p: 0, dauer: ruhig ? 1.5 : 3.5 } : null;
     W.saat = 1 + Math.floor(zufall() * 50);
     W.zielV = kmhZiel(p.kmh || geb.kmh);
     W.v = W.zielV;
@@ -414,7 +485,8 @@
     if (R.gefahr) teil('erkannt', D.PUNKTE.erkannt);
     if (!R.keinHinten && W.umgebung !== 'autobahn') W.hinten.push({ art: 'pkw', x: W.kx, dz: 26 + zufall() * 20, v: 0, folgt: true, farbe: wahl(FARBEN) });
     R.gegenAb = 1.5 + zufall() * 4;
-    R.wetterSpruch = !['klar', 'abend'].includes(W.wetter) && zufall() < 0.6;
+    R.wetterWerte = wetterWerte(def);
+    R.wetterSpruch = R.wetterWerte.length > 0 && zufall() < 0.6;
   }
   function situationBeenden() {
     let ist = 0, max = 0;
@@ -440,9 +512,14 @@
       anzeigen();
     }, () => {
       F.phase = 'situation';
-      if (sichtV() < W.zielV - 0.5) UI.fahrlehrer('neutral', HW('H033'), 2.4);
+      if (sichtV() < W.zielV - 0.5) {
+        UI.fahrlehrer('neutral', HW('H033'), 2.4);
+        // Nebel (29.10.2026): H033 hat Vorrang – der Wetter-Spruch folgt danach, wenn gerade nichts anderes zu sagen ist
+        const r = R;
+        if (R.wetterSpruch) setTimeout(() => { if (R === r && F && F.phase === 'situation' && !(r.gefahr && r.gefahr.aktiv && !r.gefahr.geloest) && !(r.hand && r.hand.angekuendigt && !r.hand.gelenkt)) { const t = wetterSpruch(r.wetterWerte); if (t) UI.fahrlehrer('neutral', t, 2.4); } }, 2900);
+      }
       else if ((W.wetterArt === 'schnee' || W.markierungen.some(m => m.stoff === 'glaette')) && !F.glaetteGesagt) { F.glaetteGesagt = true; UI.fahrlehrer('neutral', HW('H034'), 2.4); }
-      else if (R.wetterSpruch) UI.fahrlehrer('neutral', spruch('wetter'), 2.4);
+      else if (R.wetterSpruch) { const t = wetterSpruch(R.wetterWerte); if (t) UI.fahrlehrer('neutral', t, 2.4); }
     });
   }
 
@@ -774,13 +851,19 @@
     // Lkw-Kolonne auf der eigenen Spur nur, wenn sie davonfährt bzw. sicher Abstand hält
   }
 
+  const UEB_VERSCHOBEN = [];   // Situationen, deren Vorzeichen/Gefahr wegen der Überblendung warten musste (Test)
   function situationSchritt(dt) {
     R.t += dt;
     R.V.schritt && R.V.schritt(R, dt);
     if (!R) return;   // Einführung beendet (neue Fahrt beginnt)
     const vz = R.vorzeichen, g = R.gefahr;
-    if (vz && !vz.gestartet && vz.ausloesen && vz.ausloesen()) { vz.gestartet = true; vz.start && vz.start(); }
+    // Startet Vorzeichen oder Gefahr, solange die Licht-/Wetter-Überblendung noch läuft, wird sie in 0,6s zu Ende geführt – der Ablauf
+    // der Situation bleibt unverändert (Verschieben verdarb in 14 von 100 Situationen den Ablauf, Test 29.10.2026); BL_TEST.verschoben zählt solche Fälle
+    const u = W.uebergang;
+    const beeilen = () => { const rest = u ? 0.6 / Math.max(0.01, 1 - u.p) : 0; if (u && u.dauer > rest) { u.dauer = rest; if (!R.verschoben) { R.verschoben = true; UEB_VERSCHOBEN.push(R.def.id); } } };
+    if (vz && !vz.gestartet && vz.ausloesen && vz.ausloesen()) { vz.gestartet = true; vz.start && vz.start(); beeilen(); }
     if (g && !g.aktiv && g.ausloesen()) {
+      beeilen();
       g.aktiv = true; g.t0 = zeit; g.start && g.start();
       if (vz && vz.ausloesen && !vz.gestartet) { vz.gestartet = true; vz.start && vz.start(); }
     }
@@ -906,6 +989,7 @@
     }
     KL().ende(punkte, abbruch);
     UI.fahrt(false);
+    setTimeout(() => { if (F && F.beendet && !geplant) planen(2); }, 2500);   // Vorladen für „Nochmal“, nachdem das Endbild steht
     UI.ende({
       punkte, abbruch, bewertung: abbruch ? RAHMEN_TEXTE.abbruchBand : bewertung(punkte), stufe: ST().name, rt,
       bereiche: protokoll(), fehler: fehlerTop3(), doppel: F.doppel, neu: !abbruch && (alt == null || punkte > alt), alt,
@@ -1003,7 +1087,7 @@
       F = { einf: true, liste: [], idx: 0, kartenNeu: [], punkte: 0, abzug: 0, doppel: 0, rts: [], bereiche: {}, fehler: [], karten: [], schulterOk: 0, schulterAlle: 0,
         start: zeit, phase: 'situation', wartet: 0, sitPunkte: [], fehlalarmZeit: -9, abbruch: false };
       D.BEREICHE.forEach(b => { F.bereiche[b] = { ist: 0, max: 0 }; });
-      W.doppel = 0; W.dbWarn = 0; W.zeigeDoppel = true; W.fuss = 0; W.ruck = 0; W.blitz = 0; W.rand = []; W.randAb = 1; W.kreis = null;
+      W.doppel = 0; W.dbWarn = 0; W.zeigeDoppel = true; W.fuss = 0; W.ruck = 0; W.blitz = 0; W.rand = []; W.randAb = 1; W.kreis = null; W.uebergang = null;
       const def = { id: 'EINF', vorlage: 'einfuehrung', p: { umgebung: 'stadt', kmh: 50 }, gebiet: 'innenstadt', stufe: 1, titel: '', bereich: 'Verkehrsbeobachtung', schritte: [], richtung: 'links' };
       F.liste = [def];
       this.nr = -1; this.fehlalarmGesagt = false; this.hilfe = undefined; this.stand = false; this.ball = null;
@@ -1170,30 +1254,74 @@
       naechsteSituation();
     });
   }
-  // Ladezeit (Phase-5-Korrektur): bilder.js lädt vorab nur Cockpit, Fahrlehrer, Himmel. Je Situation hier die Bilder für die aktuelle
-  // und die nächste Situation anfordern: Fassaden bzw. Randstreifen und Horizont des Gebiets, Bäume (Wohngebiet/Land), Tiere (Land),
-  // Nachtfassungen nur bei Dunkelheit, Draufsicht nur vor einer Kreuzung, Endbild-Fahrlehrer zur letzten Situation.
+  // Ladezeit (Phase-5-Korrektur): bilder.js lädt vorab nur Cockpit, Fahrlehrer, Himmel. Je Situation: Fassaden bzw. Randstreifen und
+  // Horizont des Gebiets, Bäume (Wohngebiet/Land), Tiere (Land), Nachtfassungen nur bei Dunkelheit, Draufsicht nur vor einer Kreuzung,
+  // Endbild-Fahrlehrer zur letzten Situation. Vorladen (29.10.2026): die aktuelle Situation dringend, die nächsten zwei im Hintergrund
+  // (bilder.js: kleine Fassungen zuerst, nacheinander, niedrige Priorität); dazu bereitet szene.js die Fassungen (Nacht, Regen, Fern-
+  // Stufen) für Licht/Wetter der aktuellen und der nächsten Situation in ruhigen Momenten vor.
+  function bilderTeile(def) {
+    const teile = [], p = def.p || {}, umg = p.umgebung || (D.GEBIETE[def.gebiet] || D.GEBIETE.land).umgebung;
+    const w = def.wetter || (def.gebiet === 'nacht' ? 'nacht' : 'klar'), dunkel = /nacht/.test(w);
+    teile.push('(fassade|rand|hausseite)/' + umg + '-' + (dunkel ? '' : '(?!.*-nacht$)'));
+    if (umg === 'stadt' || umg === 'wohngebiet') teile.push('textur/(putz-hell|dach-)');   // Häuser mit Tiefe (29.10.2026)
+    teile.push('kulisse/horizont-' + (umg === 'autobahn' ? 'land' : umg));
+    if (umg === 'land' || umg === 'wohngebiet') teile.push('baum/');
+    if (umg === 'land') teile.push('tiere/');
+    if (def.vorlage === 'kreuzung') teile.push('draufsicht/');
+    if (p.modus === 'tunnel') teile.push('tunnel/(wand|decke|ausblick-' + (dunkel ? 'nacht' : 'tag') + ')');   // Tunnel innen (29.10.2026)
+    return teile;
+  }
+  const muster = teile => new RegExp('^(' + teile.join('|') + ')');
+  // eine Situation laden: dringend (vorrang) oder im Hintergrund (vorladen)
+  function bilderLaden(def, dringend) {
+    const BI = window.BL_BILDER;
+    if (!BI || !def || !BI.vorrang) return;
+    (dringend ? BI.vorrang : BI.vorladen)(muster(bilderTeile(def)));
+  }
+  // Licht/Wetter einer Situation für szene.js (vorbereiten) – wie wetterSetzen und dunkelHier()
+  function sichtPlan(def) {
+    if (!def) return null;
+    const p = def.p || {}, umg = p.umgebung || (D.GEBIETE[def.gebiet] || D.GEBIETE.land).umgebung;
+    const w = def.wetter || (def.gebiet === 'nacht' ? 'nacht' : 'klar');
+    return { umg, nacht: w === 'nacht' || w === 'nachtregen', regen: w === 'regen' || w === 'niesel' || w === 'nachtregen', schnee: w === 'schnee' };
+  }
   function bilderVorrang() {
     const BI = window.BL_BILDER;
     if (!BI || !BI.vorrang || !F || !F.liste) return;
-    const teile = new Set(), i0 = Math.max(0, F.idx);
-    for (let i = i0; i <= i0 + 1 && i < F.liste.length; i++) {
-      const def = F.liste[i], p = def.p || {}, umg = p.umgebung || (D.GEBIETE[def.gebiet] || D.GEBIETE.land).umgebung;
-      const w = def.wetter || (def.gebiet === 'nacht' ? 'nacht' : 'klar'), dunkel = /nacht/.test(w);
-      teile.add('(fassade|rand|hausseite)/' + umg + '-' + (dunkel ? '' : '(?!.*-nacht$)'));
-      if (umg === 'stadt' || umg === 'wohngebiet') teile.add('textur/(putz-hell|dach-)');   // Häuser mit Tiefe (29.10.2026)
-      teile.add('kulisse/horizont-' + (umg === 'autobahn' ? 'land' : umg));
-      if (umg === 'land' || umg === 'wohngebiet') teile.add('baum/');
-      if (umg === 'land') teile.add('tiere/');
-      if (def.vorlage === 'kreuzung') teile.add('draufsicht/');
-      if (p.modus === 'tunnel') teile.add('tunnel/(wand|decke|ausblick-' + (dunkel ? 'nacht' : 'tag') + ')');   // Tunnel innen (29.10.2026)
-    }
-    if (F.idx >= F.liste.length - 2) teile.add('fahrlehrer/ende-(daumen|klemmbrett)$');
-    BI.vorrang(new RegExp('^(' + [...teile].join('|') + ')'));
+    const i0 = Math.max(0, F.idx), teile = F.liste[i0] ? bilderTeile(F.liste[i0]) : [];
+    if (F.idx >= F.liste.length - 2) teile.push('fahrlehrer/ende-(daumen|klemmbrett)$');
+    if (teile.length) BI.vorrang(muster(teile));
+    for (let i = i0 + 1; i <= i0 + 2 && i < F.liste.length; i++) bilderLaden(F.liste[i], false);
+    // aktueller Zustand = so, wie die Situation gezeichnet wird (Testhilfe #wetter berücksichtigt); dazu die nächste Situation
+    const jetzt = F.idx >= 0 && R ? { umg: W.umgebung, nacht: W.wetter === 'nacht', regen: !!(W.wetter === 'regen' || W.regen), schnee: !!W.schnee } : sichtPlan(F.liste[i0]);
+    // dazu die nächste Situation und – für deren Überblendung – ihr Gebiet mit dem jetzigen Licht/Wetter
+    const naechst = sichtPlan(F.liste[i0 + 1]), zwischen = naechst && jetzt && naechst.umg !== jetzt.umg ? Object.assign({}, jetzt, { umg: naechst.umg }) : null;
+    SZ.vorbereiten && SZ.vorbereiten([jetzt, naechst, zwischen]);
+  }
+  // Ruhige Momente für das Vorbereiten (Vorladen 29.10.2026): Titel, Gebietskarte, Kreuzungs-Draufsicht, Anfahrt bis zum Vorzeichen,
+  // nach gelöster Gefahr/fertigen Handgriffen. Unruhig: Vorzeichen/Gefahr läuft, Handgriffe angekündigt, Tempo-Aufgabe nah, Überblendung.
+  function ruhigePhase() {
+    if (!F || F.beendet || F.phase !== 'situation' || !R) return true;
+    const g = R.gefahr, vz = R.vorzeichen, h = R.hand, T = R.tempoA;
+    if (W.uebergang || W.dreh) return false;
+    if (g && g.aktiv && !g.geloest) return false;
+    if (vz && vz.gestartet && !(g && g.geloest)) return false;
+    if (h && h.angekuendigt && !h.gelenkt) return false;
+    if (T && !T.fertig && T.pos - W.s < 250) return false;
+    return true;
+  }
+  let jsZeichnen = 3, echtLetzt = 0.016, bildZaehler = 0;
+  // Zeitbudget je Bild: ruhig so viel, dass das Bild unter ca. 16 ms bleibt (mind. 3 ms; auf langsamen Geräten – Zeichnen über 12 ms – nur
+  // jedes dritte Bild, damit nicht jedes Bild länger wird); sonst eine Arbeit nur auf schnellen Geräten
+  function vorbereitenBudget(ruhigJetzt) {
+    bildZaehler++;
+    if (ruhigJetzt) return jsZeichnen > 12 && bildZaehler % 3 ? 0 : Math.max(3, 12 - jsZeichnen);
+    return echtLetzt < 0.02 && jsZeichnen < 6 ? 0.5 : 0;
   }
   function schritt(dtRahmen) {
     const jetzt = performance.now(), echt = (jetzt - echtZuletzt) / 1000; echtZuletzt = jetzt;
     if (echt > 0 && echt < 0.5) fpsMessen(echt);
+    echtLetzt = echt;
     if (TEST.fps) UI.fps(`${Math.round(FPS.wert)} B/s
 Ø ${Math.round(FPS.alleBilder / Math.max(FPS.alleZeit, 0.001))} – min ${FPS.min == null ? '…' : Math.round(FPS.min)}
 ${W.einfach ? 'einfach' : 'normal'}`);
@@ -1201,14 +1329,30 @@ ${W.einfach ? 'einfach' : 'normal'}`);
     zeit += dt;
     if (!F) return;
     if (!F.beendet) {
+      // Klang-Überblendung: läuft wie das Bild ab der Situation (nach der Gebietskarte); gibt es eine Bild-Überblendung, deren Fortschritt
+      const ku = F.klangUeb;
+      if (ku) {
+        if (W.uebergang && W.uebergang.von) ku.p = W.uebergang.p;
+        else if (F.phase !== 'wechsel' && F.phase !== 'titel') ku.p = Math.min(1, ku.p + dt / ku.dauer);
+        if (ku.p >= 1 && !W.uebergang) F.klangUeb = null;
+      }
       KL().fahrt({ v: W.v, dv: W.v - (F.vVorher != null ? F.vVorher : W.v), bremse: W.bremse, umgebung: W.umgebung, gebiet: R ? R.def.gebiet : null,
         wetter: W.wetter, wetterArt: W.wetterArt, regen: W.regen, schnee: W.schnee, wischer: W.wischer, tunnel: W.tunnel || 0,
-        blinkt: !!(W.blinker || W.warn), nass: W.regen || W.schnee });
+        blinkt: !!(W.blinker || W.warn), nass: W.regen || W.schnee,
+        ueb: F.klangUeb ? { von: F.klangUeb.von, a: F.klangUeb.p * F.klangUeb.p * (3 - 2 * F.klangUeb.p) } : null });
       F.vVorher = W.v;
     }
     W.spiegel.innen += dt; W.spiegel.links += dt; W.spiegel.rechts += dt;
     W.dbWarn = Math.max(0, (W.dbWarn || 0) - dt);
     W.fuss = Math.max(0, W.fuss - dt / 1.6); W.ruck = Math.max(0, W.ruck - dt / 0.5); W.blitz = Math.max(0, W.blitz - dt / 0.6);
+    // Überblendung läuft, sobald die Gebietskarte ausgeblendet wird (Phase „situation“)
+    if (W.uebergang && F.phase !== 'wechsel' && F.phase !== 'titel') {
+      const u = W.uebergang; u.t += dt;
+      // schwaches Gerät (Bildabstand dauerhaft über 34 ms während der Überblendung, doppeltes Zeichnen): Rest in höchstens 1,2s beenden.
+      // Zähler steigt bei langsamen und fällt bei schnellen Bildern – einzelne Spitzen (Bilder vorbereiten) lösen es nicht aus.
+      if (u.t > 0.3) { u.langsam = Math.max(0, (u.langsam || 0) + (echt > 0.034 ? 1 : -1)); if (u.langsam >= 6) u.dauer = Math.min(u.dauer, 1.2 / Math.max(0.01, 1 - u.p)); }
+      u.p = Math.min(1, u.p + dt / u.dauer); if (u.p >= 1) W.uebergang = null;
+    }
     if (F.phase === 'kreuzung') return;
     if (R && (F.phase === 'situation' || F.phase === 'fertig')) situationSchritt(dt);
     bewegen_(dt);
@@ -1230,8 +1374,11 @@ ${W.einfach ? 'einfach' : 'normal'}`);
   function zeichne(g, B, H, zustand, dt) {
     if (!(B > 0 && H > 0)) return;   // Spiel im versteckten iframe (Größe 0): nichts zeichnen, beim Sichtbarwerden neu einmessen
     if (!L || L.B !== B || L.H !== H) { L = SZ.layout(B, H); cssLage(); }
-    if (zustand !== 'spiel' && !(zustand === 'ende' && F)) { g.fillStyle = '#16181a'; g.fillRect(0, 0, B, H); return; }
+    if (zustand !== 'spiel' && !(zustand === 'ende' && F)) { g.fillStyle = '#16181a'; g.fillRect(0, 0, B, H); SZ.arbeiten && SZ.arbeiten(8); return; }
+    const t0 = performance.now();
     SZ.zeichne(g, W, L, dt, Math.min(window.devicePixelRatio || 1, 2.5));
+    const t1 = performance.now(); jsZeichnen = jsZeichnen * 0.8 + (t1 - t0) * 0.2;
+    if (SZ.arbeiten) SZ.arbeiten(zustand !== 'spiel' ? 8 : vorbereitenBudget(ruhigePhase()));
   }
 
   const frage = TX && TX.frage && TX.frage.length ? wahl(TX.frage) : D.TEXTE.frage;
@@ -1251,10 +1398,11 @@ ${W.einfach ? 'einfach' : 'normal'}`);
     if (TEST.best != null) stufen.forEach(x => { if (x.id === stufe) x.best = Math.max(0, Math.min(1000, +TEST.best || 0)); });
     UI.start({
       stufe, stufen, frage, anleitung: RAHMEN_TEXTE.anleitung,
-      wahl(id) { stufe = id; BB.waehlen(id); DEF.id = BB.bestId(id); },
+      wahl(id) { stufe = id; BB.waehlen(id); DEF.id = BB.bestId(id); planen(); },
       los() { DEF.id = BB.bestId(stufe); document.getElementById('losKnopf').click(); },
       einfuehrung: { text: RT('EINFUEHRUNG_NOCHMAL') || 'Handgriffe zeigen', los() { EINF.erzwungen = true; DEF.id = BB.bestId(stufe); document.getElementById('losKnopf').click(); } },
     });
+    planen();
   }
   UI.beimNochmal(() => { UI.endeAus(); document.getElementById('nochmalKnopf').click(); });
 
@@ -1278,7 +1426,7 @@ ${W.einfach ? 'einfach' : 'normal'}`);
   // Testschnittstelle (nur lesen bzw. für Bots: Lage der Ziele und Bedienteile)
   window.BL_TEST = {
     get W() { return W; }, get F() { return F; }, get R() { return R; }, get L() { return L; }, get zeit() { return zeit; },
-    ALLE, KREUZ,
+    ALLE, KREUZ, verschoben: UEB_VERSCHOBEN, wetterSpruch: werte => wetterSpruch(werte), wetterWerte: def => wetterWerte(def || R.def),
     // Routen erzeugen ohne zu fahren: route(saat) fest; routen(n) = n Fahrten hintereinander mit Gedächtnis (nur im Speicher)
     route(saat, stufeId) { const r = routeBauen(STUFE_NR[stufeId || stufe] || 1, zufallsGen(saat), { s: [], k: [] }); return { reihe: r.reihe, ids: r.liste.map(s => s.id), gebiete: r.liste.map(s => s.gebiet), wetter: r.liste.map(s => s.wetter || (s.gebiet === 'nacht' ? 'nacht' : 'klar')) }; },
     routen(n, stufeId) { const m = { s: [], k: [] }, aus = []; for (let i = 0; i < n; i++) { const r = routeBauen(STUFE_NR[stufeId || stufe] || 1, zufall, m); r.liste.forEach(s => { const l = s.vorlage === 'kreuzung' ? m.k : m.s; const j = l.indexOf(s.id); if (j >= 0) l.splice(j, 1); l.push(s.id); }); m.s = m.s.slice(-D.ROUTE.merken); m.k = m.k.slice(-D.ROUTE.merkenKreuzung); aus.push({ reihe: r.reihe, ids: r.liste.map(s => s.id), gebiete: r.liste.map(s => s.gebiet), wetter: r.liste.map(s => s.wetter || (s.gebiet === 'nacht' ? 'nacht' : 'klar')) }); } return aus; },

@@ -3253,37 +3253,374 @@ window.BL_TEXTE = {
    {
     "id": "SP56",
     "text": "Regen heißt: doppelter Abstand, halbes Drama.",
-    "mimik": "neutral"
+    "mimik": "neutral",
+    "wetter": [
+     "regen",
+     "nass"
+    ]
    },
    {
     "id": "SP57",
     "text": "Nachts sieht man weniger, also schauen wir mehr.",
-    "mimik": "neutral"
+    "mimik": "neutral",
+    "wetter": [
+     "nacht"
+    ]
    },
    {
     "id": "SP58",
     "text": "Nebel? Dann fahren wir eben gemütlich. Niemand hat es eilig.",
-    "mimik": "neutral"
+    "mimik": "neutral",
+    "wetter": [
+     "nebel"
+    ]
    },
    {
     "id": "SP59",
     "text": "Licht an ist keine Geschmackssache, sondern Pflicht.",
-    "mimik": "neutral"
+    "mimik": "neutral",
+    "wetter": [
+     "nacht",
+     "nebel"
+    ]
    },
    {
     "id": "SP60",
     "text": "Glatt hier. Früh bremsen, als lägen rohe Eier im Kofferraum.",
-    "mimik": "neutral"
+    "mimik": "neutral",
+    "wetter": [
+     "glaette",
+     "schnee"
+    ]
    },
    {
     "id": "SP61",
     "text": "Die Sonne blendet? Dann schauen wir genauer und bremsen früher.",
-    "mimik": "neutral"
+    "mimik": "neutral",
+    "wetter": [
+     "blendung"
+    ]
    },
    {
     "id": "SP62",
     "text": "Im Dunkeln rechnen wir mit allem – auch mit Rehen.",
-    "mimik": "neutral"
+    "mimik": "neutral",
+    "wetter": [
+     "nacht"
+    ]
+   },
+   {
+    "id": "SP67",
+    "text": "Nasse Straße, längerer Bremsweg. Also bremsen wir etwas früher.",
+    "mimik": "neutral",
+    "wetter": [
+     "regen",
+     "nass"
+    ]
+   },
+   {
+    "id": "SP68",
+    "text": "Die Wischer geben ihr Bestes. Wir geben etwas mehr Abstand.",
+    "mimik": "freut",
+    "wetter": [
+     "regen"
+    ]
+   },
+   {
+    "id": "SP69",
+    "text": "Im Regen wirst du schlecht gesehen. Mit Licht erkennt man dich früher.",
+    "mimik": "neutral",
+    "wetter": [
+     "regen"
+    ]
+   },
+   {
+    "id": "SP70",
+    "text": "Unterm Regenschirm schauen viele nur auf ihre Schuhe. Wir nicht.",
+    "mimik": "neutral",
+    "wetter": [
+     "regen"
+    ]
+   },
+   {
+    "id": "SP71",
+    "text": "Wo nachts ein Reh steht, sind oft noch mehr in der Nähe.",
+    "mimik": "neutral",
+    "wetter": [
+     "nacht"
+    ]
+   },
+   {
+    "id": "SP72",
+    "text": "Dunkle Kleidung taucht nachts erst spät im Scheinwerfer auf.",
+    "mimik": "neutral",
+    "wetter": [
+     "nacht"
+    ]
+   },
+   {
+    "id": "SP73",
+    "text": "Kommt dir jemand entgegen, blendest du ab. Das ist einfach fair.",
+    "mimik": "neutral",
+    "wetter": [
+     "nacht"
+    ]
+   },
+   {
+    "id": "SP74",
+    "text": "Blendet dich der Gegenverkehr, schau zum rechten Fahrbahnrand.",
+    "mimik": "neutral",
+    "wetter": [
+     "nacht"
+    ]
+   },
+   {
+    "id": "SP75",
+    "text": "Im Nebel musst du innerhalb der Strecke halten können, die du siehst.",
+    "mimik": "neutral",
+    "wetter": [
+     "nebel"
+    ]
+   },
+   {
+    "id": "SP76",
+    "text": "Die Nebelschlussleuchte ist für dichten Nebel, nicht für Regen.",
+    "mimik": "neutral",
+    "wetter": [
+     "nebel"
+    ]
+   },
+   {
+    "id": "SP77",
+    "text": "Nebelschlussleuchte nur bei Sicht unter 50 m. Darüber bleibt sie aus.",
+    "mimik": "neutral",
+    "wetter": [
+     "nebel"
+    ]
+   },
+   {
+    "id": "SP78",
+    "text": "Bei Schneefall sieht man wenig und bremst lang. Wir lassen uns Zeit.",
+    "mimik": "neutral",
+    "wetter": [
+     "schnee"
+    ]
+   },
+   {
+    "id": "SP79",
+    "text": "Räumfahrzeuge sind langsam, aber sie machen uns den Weg frei.",
+    "mimik": "neutral",
+    "wetter": [
+     "schnee"
+    ]
+   },
+   {
+    "id": "SP80",
+    "text": "Schneematsch zwischen den Spuren bringt das Auto leicht ins Schwimmen.",
+    "mimik": "neutral",
+    "wetter": [
+     "schnee"
+    ]
+   },
+   {
+    "id": "SP81",
+    "text": "Frischer Schnee sieht hübsch aus, bremst aber miserabel.",
+    "mimik": "freut",
+    "wetter": [
+     "schnee"
+    ]
+   },
+   {
+    "id": "SP82",
+    "text": "Brücken frieren zuerst – auch wenn die Straße davor trocken wirkt.",
+    "mimik": "neutral",
+    "wetter": [
+     "glaette"
+    ]
+   },
+   {
+    "id": "SP83",
+    "text": "Auf Eis mag das Auto nichts Ruckartiges. Sanft bremsen, sanft lenken.",
+    "mimik": "neutral",
+    "wetter": [
+     "glaette"
+    ]
+   },
+   {
+    "id": "SP84",
+    "text": "Um null Grad wird es tückisch. Reif bemerkt man oft erst beim Bremsen.",
+    "mimik": "neutral",
+    "wetter": [
+     "glaette"
+    ]
+   },
+   {
+    "id": "SP85",
+    "text": "Glatt ist es, wo es glänzt. Und manchmal auch da, wo nichts glänzt.",
+    "mimik": "neutral",
+    "wetter": [
+     "glaette"
+    ]
+   },
+   {
+    "id": "SP86",
+    "text": "Im Gegenlicht sind Fußgänger nur Schatten. Da schauen wir genau hin.",
+    "mimik": "neutral",
+    "wetter": [
+     "blendung"
+    ]
+   },
+   {
+    "id": "SP87",
+    "text": "Wer geblendet ist, fährt langsamer, bis die Augen wieder mitspielen.",
+    "mimik": "neutral",
+    "wetter": [
+     "blendung"
+    ]
+   },
+   {
+    "id": "SP88",
+    "text": "Tiefe Sonne macht Ampeln schwer lesbar. Lieber zweimal schauen.",
+    "mimik": "neutral",
+    "wetter": [
+     "blendung"
+    ]
+   },
+   {
+    "id": "SP89",
+    "text": "Gegen die Sonne verschwinden Radler gern im Schatten. Genau hinsehen.",
+    "mimik": "neutral",
+    "wetter": [
+     "blendung"
+    ]
+   },
+   {
+    "id": "SP90",
+    "text": "Seitenwind auf der Brücke schiebt ganz schön. Ruhig gegenlenken.",
+    "mimik": "neutral",
+    "wetter": [
+     "wind"
+    ]
+   },
+   {
+    "id": "SP91",
+    "text": "Beim Überholen eines Lkw kommt die Böe, sobald du vorbei bist.",
+    "mimik": "neutral",
+    "wetter": [
+     "wind"
+    ]
+   },
+   {
+    "id": "SP92",
+    "text": "Der Windsack steht waagerecht. Das ist kein Deko-Wimpel.",
+    "mimik": "freut",
+    "wetter": [
+     "wind"
+    ]
+   },
+   {
+    "id": "SP93",
+    "text": "Nach einem Sturm liegen gern Äste auf der Straße. Wir schauen genau.",
+    "mimik": "neutral",
+    "wetter": [
+     "wind"
+    ]
+   },
+   {
+    "id": "SP94",
+    "text": "Pfützen neben dem Gehweg? Langsam, sonst duschst du die Leute.",
+    "mimik": "freut",
+    "wetter": [
+     "nass"
+    ]
+   },
+   {
+    "id": "SP95",
+    "text": "Nasses Laub ist glatt wie Seife. Vor der Kurve bremsen wir früh.",
+    "mimik": "neutral",
+    "wetter": [
+     "nass"
+    ]
+   },
+   {
+    "id": "SP96",
+    "text": "Wird die Lenkung plötzlich leicht, schwimmt das Auto. Ruhig bleiben.",
+    "mimik": "neutral",
+    "wetter": [
+     "nass"
+    ]
+   },
+   {
+    "id": "SP97",
+    "text": "Erde vom Acker plus Regen gibt eine richtig schmierige Straße.",
+    "mimik": "neutral",
+    "wetter": [
+     "nass"
+    ]
+   },
+   {
+    "id": "SP98",
+    "text": "Das Wetter bestimmt das Tempo, nicht nur das Schild.",
+    "mimik": "neutral",
+    "wetter": [
+     "alle"
+    ]
+   },
+   {
+    "id": "SP99",
+    "text": "Je weniger du siehst, desto langsamer fahren wir. Ganz einfach.",
+    "mimik": "neutral",
+    "wetter": [
+     "alle"
+    ]
+   },
+   {
+    "id": "SP100",
+    "text": "Mehr Abstand kostet nichts und schenkt dir Zeit zum Reagieren.",
+    "mimik": "neutral",
+    "wetter": [
+     "alle"
+    ]
+   },
+   {
+    "id": "SP101",
+    "text": "Wer früh hinschaut, muss später nicht hart bremsen.",
+    "mimik": "neutral",
+    "wetter": [
+     "alle"
+    ]
+   },
+   {
+    "id": "SP102",
+    "text": "Rechne ruhig mit Fehlern der anderen. Dann überrascht dich keiner.",
+    "mimik": "neutral",
+    "wetter": [
+     "alle"
+    ]
+   },
+   {
+    "id": "SP103",
+    "text": "Unsicher? Dann nimm Tempo raus. Das hat noch keinem geschadet.",
+    "mimik": "neutral",
+    "wetter": [
+     "alle"
+    ]
+   },
+   {
+    "id": "SP104",
+    "text": "Ab und zu ein Blick in den Spiegel – auch wenn vorn viel los ist.",
+    "mimik": "neutral",
+    "wetter": [
+     "alle"
+    ]
+   },
+   {
+    "id": "SP105",
+    "text": "Ruhig bleiben, weit vorausschauen. Den Rest schaffen wir zusammen.",
+    "mimik": "freut",
+    "wetter": [
+     "alle"
+    ]
    }
   ],
   "kreuzung": [
