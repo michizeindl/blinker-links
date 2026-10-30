@@ -119,9 +119,10 @@
   // – große Bilder (KLEIN) kommen erst als kleine Fassung (wenige KB), die große folgt; bis sie geladen, entpackt und vorbereitet ist
   //   (szene.js: Nacht-/Regen-/Fern-Fassungen in ruhigen Momenten, BL_BILDER.vorbereiter), zeichnet das Spiel die kleine – lieber kurz
   //   klein als ein Hänger. Der Tausch fällt kaum auf, die Häuser sind dann meist noch weit weg.
-  const BASIS = /^(cockpit\/|fahrlehrer\/(neutral|freut|erschrickt|nickt|skeptisch|seufzt|cockpit-haltegriff)$|himmel\/)/;
-  const ERSATZ = /^fahrlehrer\/(szene-|ende-zeigt$)/;   // Ersatzfassungen (es gibt ende-*/cockpit-*), nie vorab
-  const RANG = k => /^(cockpit\/|fahrlehrer\/(neutral|freut|erschrickt)$)/.test(k) ? 0 : 1;
+  // Startbild B (30.10.2026): szene-klemmbrett = Fahrlehrer auf dem Beifahrersitz im Startbild – sofort und als Erstes laden
+  const BASIS = /^(cockpit\/|fahrlehrer\/(neutral|freut|erschrickt|nickt|skeptisch|seufzt|cockpit-haltegriff|szene-klemmbrett)$|himmel\/)/;
+  const ERSATZ = /^fahrlehrer\/(szene-(?!klemmbrett$)|ende-zeigt$)/;   // Ersatzfassungen (es gibt ende-*/cockpit-*), nie vorab
+  const RANG = k => k === 'fahrlehrer/szene-klemmbrett' ? -1 : /^(cockpit\/|fahrlehrer\/(neutral|freut|erschrickt)$)/.test(k) ? 0 : 1;
   let dringend = VORHANDEN.filter(k => BASIS.test(k)).sort((a, b) => RANG(a) - RANG(b)), hinten = [];
   const angefordert = new Set(dringend);
   let laufend = 0, gestartet = false;
@@ -241,7 +242,7 @@
 
   window.BL_BILDER = {
     // Platzhalter aus den Musterfirmen-Bildern (Material/Skripte/platzhalter-bauen.py)
-    land: 'bilder/platzhalter/land.webp',            // Hintergrund Start-/Endbild (Wegweiser)
+    land: 'bilder/platzhalter/land.webp',            // Hintergrund Endbild; Startbild B: Landstraße in der Windschutzscheibe
     ANSCHLUESSE, VORHANDEN, MASSE, KLEIN, geladen, vorrang, vorladen, waehle, varianten,
     // für szene.js (Vorbereiten) und Messungen: große Fassung geladen+entpackt, freigegeben, irgendeine Fassung da; Ladeschlangen
     voll, istBereit: k => !!nutzbar(k), vorhanden: k => !!schonDa(k), hatKlein: k => kleinDa.has(k),

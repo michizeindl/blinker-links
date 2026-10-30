@@ -3840,6 +3840,9 @@ window.BL_TEXTE = {
   "EINFUEHRUNG_NOCHMAL": {
    "Text": "Handgriffe zeigen"
   },
+  "FAHRAUFTRAG": {
+   "Text": "Fahrauftrag"
+  },
   "SCHALTER_PRUEFUNG": {
    "Text": "Bereit für die echte Prüfung?"
   },

@@ -1374,7 +1374,7 @@ ${W.einfach ? 'einfach' : 'normal'}`);
   function zeichne(g, B, H, zustand, dt) {
     if (!(B > 0 && H > 0)) return;   // Spiel im versteckten iframe (Größe 0): nichts zeichnen, beim Sichtbarwerden neu einmessen
     if (!L || L.B !== B || L.H !== H) { L = SZ.layout(B, H); cssLage(); }
-    if (zustand !== 'spiel' && !(zustand === 'ende' && F)) { g.fillStyle = '#16181a'; g.fillRect(0, 0, B, H); SZ.arbeiten && SZ.arbeiten(8); return; }
+    if (zustand !== 'spiel' && !(zustand === 'ende' && F && !startOffen)) { g.fillStyle = '#16181a'; g.fillRect(0, 0, B, H); SZ.arbeiten && SZ.arbeiten(8); return; }
     const t0 = performance.now();
     SZ.zeichne(g, W, L, dt, Math.min(window.devicePixelRatio || 1, 2.5));
     const t1 = performance.now(); jsZeichnen = jsZeichnen * 0.8 + (t1 - t0) * 0.2;
@@ -1390,21 +1390,28 @@ ${W.einfach ? 'einfach' : 'normal'}`);
     groesse(B, H) { L = SZ.layout(B, H); cssLage(); },
   };
 
+  // „Nochmal“ führt immer zum Startbild (MZ, 30.10.2026): dort ist die zuletzt gespielte Stufe gewählt, eine eben freigeschaltete Stufe ist
+  // frei; die im Endbild geplante nächste Route bleibt (planen nur, wenn noch keine oder eine für eine andere Stufe da ist).
+  // startOffen: Rahmen steht nach einer Fahrt noch auf 'ende' – hinter dem Startbild dann keine Fahrszene zeichnen.
+  let startOffen = false;
   function startbild() {
+    startOffen = true;
     KL().szene('start');
     const s = BB.statistik();
     const freiAb = id => { const v = BB.VORHER[id]; return v ? (RT('STUFE_FREI_AB') || '').replace('{punkte}', BB.zahl(BB.FREI_AB)).replace('{stufe}', (TX && TX.stufen && TX.stufen[v] && TX.stufen[v].kurz) || D.STUFEN[v].name) : ''; };
     const stufen = BB.STUFEN.map(x => ({ id: x.id, name: x.name, frei: TEST.frei || x.id === stufe || BB.frei(x.id, s), best: BB.best(x.id), freiAb: freiAb(x.id) }));
     if (TEST.best != null) stufen.forEach(x => { if (x.id === stufe) x.best = Math.max(0, Math.min(1000, +TEST.best || 0)); });
     UI.start({
-      stufe, stufen, frage, anleitung: RAHMEN_TEXTE.anleitung,
+      stufe, stufen, frage, anleitung: RAHMEN_TEXTE.anleitung, fahrauftrag: RT('FAHRAUFTRAG'),   // Startbild B: Überschrift des Klemmbretts
       wahl(id) { stufe = id; BB.waehlen(id); DEF.id = BB.bestId(id); planen(); },
-      los() { DEF.id = BB.bestId(stufe); document.getElementById('losKnopf').click(); },
-      einfuehrung: { text: RT('EINFUEHRUNG_NOCHMAL') || 'Handgriffe zeigen', los() { EINF.erzwungen = true; DEF.id = BB.bestId(stufe); document.getElementById('losKnopf').click(); } },
+      los() { startOffen = false; DEF.id = BB.bestId(stufe); document.getElementById('losKnopf').click(); },
+      einfuehrung: { text: RT('EINFUEHRUNG_NOCHMAL') || 'Handgriffe zeigen', los() { startOffen = false; EINF.erzwungen = true; DEF.id = BB.bestId(stufe); document.getElementById('losKnopf').click(); } },
     });
-    planen();
+    if (!geplant || geplant.stufe !== stufe) planen();
+    else for (let i = 0; i < Math.min(3, geplant.liste.length); i++) bilderLaden(geplant.liste[i], false);   // Endbild lud nur zwei vor
   }
-  UI.beimNochmal(() => { UI.endeAus(); document.getElementById('nochmalKnopf').click(); });
+  UI.beimNochmal(() => { UI.endeAus(); startbild(); });
+  UI.startNeu = startbild;   // Beispiel-Endbild (#ende=…): „Nochmal“ führt ebenso zum Startbild, auch wenn es noch nie gezeigt wurde
 
   R_.spiel(DEF);
   if (TEST.ende != null || TEST.abbruch) {
@@ -1426,6 +1433,7 @@ ${W.einfach ? 'einfach' : 'normal'}`);
   // Testschnittstelle (nur lesen bzw. für Bots: Lage der Ziele und Bedienteile)
   window.BL_TEST = {
     get W() { return W; }, get F() { return F; }, get R() { return R; }, get L() { return L; }, get zeit() { return zeit; },
+    get geplant() { return geplant && { stufe: geplant.stufe, ids: geplant.liste.map(s => s.id) }; }, get startOffen() { return startOffen; },
     ALLE, KREUZ, verschoben: UEB_VERSCHOBEN, wetterSpruch: werte => wetterSpruch(werte), wetterWerte: def => wetterWerte(def || R.def),
     // Routen erzeugen ohne zu fahren: route(saat) fest; routen(n) = n Fahrten hintereinander mit Gedächtnis (nur im Speicher)
     route(saat, stufeId) { const r = routeBauen(STUFE_NR[stufeId || stufe] || 1, zufallsGen(saat), { s: [], k: [] }); return { reihe: r.reihe, ids: r.liste.map(s => s.id), gebiete: r.liste.map(s => s.gebiet), wetter: r.liste.map(s => s.wetter || (s.gebiet === 'nacht' ? 'nacht' : 'klar')) }; },

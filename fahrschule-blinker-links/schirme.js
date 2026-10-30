@@ -1,5 +1,5 @@
-// „Blinker links“ – eigene Schirme über dem Rahmen (Stil 3 „Wegweiser“, MZ 28.10.2026): Startbild mit Wegweiser-Schild,
-// Stufen als Pfeilschilder am Pfosten und Bestwert-Tafel; Endbild mit Ziel-Schild „Ziel – Musterstadt“, Punkten, Plakette
+// „Blinker links“ – eigene Schirme über dem Rahmen: Startbild B „Platz nehmen – Fahrauftrag“ (MZ, 30.10.2026; vorher Wegweiser-
+// Schild mit Pfeilschildern am Pfosten); Endbild (Stil 3 „Wegweiser“, MZ 28.10.2026) mit Ziel-Schild „Ziel – Musterstadt“, Punkten, Plakette
 // (mittlere Reaktionszeit), Prüfungsprotokoll (Netz-Grafik, fünf Bereiche) und Fehlerliste; dazu im Spiel der Fahrlehrer
 // (Code-Platzhalter: Mann, Mimik neutral/freut/erschrickt, MZ 28.10.2026) mit Sprechblase, Einblendungen (Stufen-Titel,
 // Gebiet je Situation), Hinweis-Leiste (Fahrstunde), Punkte-Popups und die Vorfahrt-Kreuzung in Draufsicht.
@@ -24,14 +24,6 @@
     <linearGradient id="blech" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="hell"/><stop offset=".5" class="mitte"/><stop offset="1" class="dunkel"/></linearGradient>
     <symbol id="uhr" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8.5"/><path d="M12 9v4.5l2.8 1.8M10 2.5h4"/></symbol>
     <symbol id="pfeilR" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
-    <g id="grossschild"><path d="M2 79 44 4Q46 1 50 1H326q8 0 8 8V149q0 8-8 8H50q-4 0-6-3Z" fill="#e9ece9"/>
-      <path d="M7 79 47 8.4Q49 5 52.6 5H323q7 0 7 7V146q0 7-7 7H52.6Q49 153 47 149.6Z" fill="url(#blech)"/>
-      <path d="M8.2 79 47 9.8Q49 6.2 52.6 6.2H323q5.8 0 5.8 5.8" fill="none" stroke="#fff" stroke-opacity=".2" stroke-width="1"/>
-      <circle cx="316" cy="19" r="2.4" fill="#cfd5d0"/><circle cx="316" cy="139" r="2.4" fill="#cfd5d0"/></g>
-    <g id="kleinschild"><path d="M1 21 17 2Q18 .6 20 .6H244q5 0 5 5v30.8q0 5-5 5H20Q18 41.4 17 40Z" fill="#e9ece9"/>
-      <path d="M4.4 21 19 3.8Q20 2.8 21.6 2.8H243q3.2 0 3.2 3.2V36q0 3.2-3.2 3.2H21.6Q20 39.2 19 38.2Z" fill="url(#blech)"/></g>
-    <g id="kleinschild-an"><path d="M1 21 17 2Q18 .6 20 .6H244q5 0 5 5v30.8q0 5-5 5H20Q18 41.4 17 40Z" fill="#ffd014"/>
-      <path d="M4.4 21 19 3.8Q20 2.8 21.6 2.8H243q3.2 0 3.2 3.2V36q0 3.2-3.2 3.2H21.6Q20 39.2 19 38.2Z" fill="url(#blech)"/></g>
     <g id="flagge"><path d="M2 1v17" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><path d="M3 2h17v10H3z" fill="#fff"/>
       <path d="M3 2h4.25v3.33H3zM11.5 2h4.25v3.33H11.5zM7.25 5.33h4.25v3.33H7.25zM15.75 5.33H20v3.33h-4.25zM3 8.66h4.25V12H3zM11.5 8.66h4.25V12H11.5z" class="flaggeFeld"/></g>
   </defs></svg>`;
@@ -61,7 +53,7 @@
       <g fill="#2a1d16">${M.auge}</g>${M.mund}</g></svg>`;
   }
 
-  // ---------- Startbild (Wegweiser) ----------
+  // ---------- Schirme Start und Ende ----------
   const start = el('section', 'bl-schirm bl-start');
   start.hidden = true;
   const ende = el('section', 'bl-schirm bl-ende');
@@ -71,53 +63,109 @@
   const hg = () => `<div class="bl-hg" style="background-image:url(${BI.land || 'bilder/platzhalter/land.webp'})" aria-hidden="true"></div>`;
   document.body.append(start, ende);
 
+  // ---------- Startbild B „Platz nehmen – Fahrauftrag“ (MZ, 30.10.2026) ----------
+  // Blick vom Fahrersitz zum Beifahrer: oben Windschutzscheibe mit Landstraße, Dachhimmel und A-Säule (Code), Logo frei oben links,
+  // gelbes Band, Fahrlehrer (szene-klemmbrett, Polo umgefärbt) auf dem Beifahrersitz mit Sprechblase; darunter das Klemmbrett
+  // „Fahrauftrag“ mit Anleitung, Stufen als Ankreuz-Zeilen, Zeile „Handgriffe zeigen“ und Bestwert. Höchstens zwei Bedien-Sprachen
+  // (MZ, 30.10.2026): auf dem Blatt nur Papier-Zeilen, unten nur „Los geht's“ (gefüllt) und „Zum Menü“ (umrandet).
+  // Aufbau: Hochformat = Spalte (Platz oben, Klemmbrett, Knöpfe) – die Höhe des freien Platzes oben bestimmt Fahrlehrer, Band und
+  // Blase (CSS-Variablen aus startLage()); Querformat = Klemmbrett links, Band/Blase/Knöpfe in der Mitte, Fahrlehrer rechts.
+  const FIGUR_START = 'fahrlehrer/szene-klemmbrett';
+  // Haken wie mit dem Kugelschreiber gezogen (pathLength 1: Strich-Animation unabhängig von der Größe)
+  const HAKEN = '<svg class="sb-haken" viewBox="0 0 30 28" aria-hidden="true"><path pathLength="1" d="M5 15.5c2.6 1.8 4.6 4 6.2 6.8C14.6 14 19.5 7.4 27 2.5"/></svg>';
+  const ABSPIELEN = '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8"/><path d="M8 6.8l4.6 3.2L8 13.2z"/></svg>';
+  function startFigur() {
+    const f = start.querySelector('.sb-figur');
+    if (!f) return;
+    const u = BI.url && BI.url(FIGUR_START);
+    if (!u || f.dataset.src === u) return;
+    f.dataset.src = u;
+    const m = BI.mass && (BI.mass(FIGUR_START) || {}).px;
+    f.innerHTML = `<img src="${u}" alt=""${m ? ` width="${m[0]}" height="${m[1]}"` : ''}>`;
+    const img = f.querySelector('img'), da = () => f.classList.add('da');
+    if (img.complete) da(); else img.addEventListener('load', da, { once: true });
+  }
   let startOpts = null;
   function startbild(o) {
     startOpts = o;
-    start.innerHTML = hg() + `<div class="bl-spalten"><div class="bl-sp1">
-        <div class="bl-lehrer"><div class="bl-figur">${fahrlehrerSvg('freut')}</div><div class="bl-blase">${esc(o.frage)}</div></div>
-        <div class="bl-gross"><svg class="platte" viewBox="0 0 335 158" preserveAspectRatio="none" aria-hidden="true"><use href="#grossschild"/></svg>
-          <h1 class="bl-band">${esc(D.TEXTE.titel)}</h1>
-          <p class="bl-anl"></p></div>
-      </div><div class="bl-sp2">
-        <div class="bl-pfosten" aria-hidden="true"></div>
-        <div class="bl-stufen" role="radiogroup" aria-label="Stufe"></div>
-        <div class="bl-tafel bl-bestt"><span>Dein Bestwert</span><b></b></div>
-        <div class="bl-knoepfe">${o.einfuehrung ? `<button class="bl-einfknopf" type="button" data-einf><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8"/><path d="M8 6.8l4.6 3.2L8 13.2z"/></svg>${esc(o.einfuehrung.text)}</button>` : ''}<button class="bl-knopf" type="button" data-los>Los geht's</button><a class="bl-knopf zweit" href="${esc(heim)}">Zum Menü</a></div>
-      </div></div>`;
+    const anl = o.stufen.map(s => `<span data-id="${esc(s.id)}">${esc(o.anleitung[s.id] || '')}</span>`).join('');
+    start.innerHTML = `<div class="sb-szene" aria-hidden="true"><div class="sb-fenster"><i style="background-image:url(${BI.land || 'bilder/platzhalter/land.webp'})"></i></div>
+        <div class="sb-innen"></div><div class="sb-saeule"></div><div class="sb-himmel"></div><div class="sb-figur"></div></div>
+      <h1 class="bl-band sb-band">${esc(D.TEXTE.titel)}</h1>
+      <div class="sb-blase"><p>${esc(o.frage)}</p></div>
+      <div class="sb-buehne">
+        <div class="sb-platz"></div>
+        <div class="sb-brett"><i class="sb-klemme" aria-hidden="true"></i><div class="sb-blatt">
+          ${o.fahrauftrag ? `<h2 class="sb-titel">${esc(o.fahrauftrag)}</h2>` : ''}
+          <p class="sb-anl">${anl}</p>
+          <div class="sb-wahl" role="radiogroup" aria-label="Stufe"></div>
+          ${o.einfuehrung ? `<button class="sb-zeile sb-hg" type="button" data-einf><span class="sb-kasten">${ABSPIELEN}</span><span class="sb-name"><b>${esc(o.einfuehrung.text)}</b></span></button>` : ''}
+          <div class="sb-best"><span>Dein Bestwert</span><b></b></div>
+        </div></div>
+        <div class="sb-unten"><button class="bl-knopf" type="button" data-los>Los geht's</button><a class="bl-knopf zweit" href="${esc(heim)}">Zum Menü</a></div>
+      </div>`;
     start.prepend(logoStart);
-    const stufen = start.querySelector('.bl-stufen');
+    const wahl = start.querySelector('.sb-wahl');
     o.stufen.forEach(s => {
-      const b = el('button', 'bl-stufe' + (s.frei ? '' : ' aus'));
+      const b = el('button', 'sb-zeile' + (s.frei ? '' : ' aus'));
       b.type = 'button'; b.dataset.id = s.id; b.setAttribute('role', 'radio');
-      if (!s.frei) { b.disabled = true; b.setAttribute('aria-disabled', 'true'); }
-      // gesperrte Stufe: ausgegraut mit Hinweis „Frei ab 550 Punkten in der …“ (MZ, 29.10.2026; kein „demnächst“)
-      if (!s.frei && s.freiAb) b.setAttribute('aria-label', s.name + ' – ' + s.freiAb);
-      b.innerHTML = `<svg class="platte" viewBox="0 0 250 42" preserveAspectRatio="none" aria-hidden="true"><use href="#kleinschild"/></svg><span class="inhalt"><span class="name">${esc(s.name)}${!s.frei && s.freiAb ? `<small>${esc(s.freiAb)}</small>` : ''}</span><span class="haken" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.6 2.6L10 3"/></svg></span></span><i class="schelle" aria-hidden="true"></i>`;
-      b.addEventListener('click', () => { if (!s.frei) return; o.stufe = s.id; o.wahl(s.id); startZeigen(); });
-      stufen.append(b);
+      // gesperrte Stufe: grau, schraffiertes Kästchen, Hinweis „Frei ab 550 Punkten in der …“ (MZ, 29.10.2026; kein „demnächst“)
+      if (!s.frei) { b.disabled = true; b.setAttribute('aria-disabled', 'true'); if (s.freiAb) b.setAttribute('aria-label', s.name + ' – ' + s.freiAb); }
+      b.innerHTML = `<span class="sb-kasten">${s.frei ? HAKEN : ''}</span><span class="sb-name"><b>${esc(s.name)}</b>${!s.frei && s.freiAb ? `<small>${esc(s.freiAb)}</small>` : ''}</span>`;
+      b.addEventListener('click', () => { if (!s.frei || o.stufe === s.id) return; o.stufe = s.id; o.wahl(s.id); startZeigen(true); });
+      wahl.append(b);
     });
     start.querySelector('[data-los]').addEventListener('click', () => { start.hidden = true; o.los(); });
     const einf = start.querySelector('[data-einf]');
     if (einf) einf.addEventListener('click', () => { start.hidden = true; o.einfuehrung.los(); });
-    startZeigen();
+    startZeigen(false);
+    startFigur();
+    if (startBeob) startBeob.observe(start.querySelector('.sb-brett'));   // Höhe ändert sich mit der Schrift
     start.hidden = false;
-    // Spielertest 29.10.2026 (quer kurz halb leer): Inhalt erst sichtbar machen, wenn Schrift und Logo da sind (höchstens 600 ms warten)
+    start.scrollTop = 0;
+    // Spielertest 29.10.2026 (quer kurz halb leer): Inhalt erst sichtbar machen, wenn Schrift und Logo da sind (höchstens 600 ms warten);
+    // so lange stehen auch die Einblend-Animationen (CSS: .baut pausiert sie)
     start.classList.add('baut');
-    const fertig = () => start.classList.remove('baut');
+    startLage();
+    const fertig = () => { startLage(); start.classList.remove('baut'); };
     Promise.race([Promise.all([document.fonts ? document.fonts.ready : null, new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))]), new Promise(r => setTimeout(r, 600))]).then(fertig, fertig);
   }
-  function startZeigen() {
+  function startZeigen(wechsel) {
     const o = startOpts;
-    start.querySelectorAll('.bl-stufe').forEach(b => {
+    start.querySelectorAll('.sb-wahl .sb-zeile').forEach(b => {
       const an = b.dataset.id === o.stufe;
       b.classList.toggle('an', an); b.setAttribute('aria-checked', an ? 'true' : 'false');
-      b.querySelector('use').setAttribute('href', an ? '#kleinschild-an' : '#kleinschild');
+      // Haken bei jedem Wechsel neu ziehen (Animation neu starten)
+      if (an && wechsel) { const h = b.querySelector('.sb-haken'); if (h) { b.classList.remove('an'); void h.getBoundingClientRect(); b.classList.add('an', 'neu'); } }
     });
-    start.querySelector('.bl-anl').textContent = o.anleitung[o.stufe] || '';
+    // Anleitung: alle drei Texte liegen übereinander (die Höhe richtet sich nach dem längsten – kein Springen beim Wechsel)
+    start.querySelectorAll('.sb-anl span').forEach(s => s.classList.toggle('an', s.dataset.id === o.stufe));
     const s = o.stufen.find(x => x.id === o.stufe), best = s && s.best || 0;
-    start.querySelector('.bl-bestt b').innerHTML = `${zahl(best)}<small>/1.000 Punkte</small>`;
+    start.querySelector('.sb-best b').innerHTML = `${zahl(best)}<small>/1.000 Punkte</small>`;
   }
+  // Lage messen und als CSS-Variablen setzen: --kh = Oberkante des Klemmbretts (Hochformat: Höhe des freien Platzes oben),
+  // --kl/--kw = linker Rand/Breite der Spalte, --mr = rechter Rand der Mitte (Querformat), --bb = Unterkante des Bands
+  function startLage() {
+    if (start.hidden) return;
+    const q = start.getBoundingClientRect(), r = e => e.getBoundingClientRect();
+    const brett = start.querySelector('.sb-brett'), buehne = start.querySelector('.sb-buehne'), unten = start.querySelector('.sb-unten'), band = start.querySelector('.sb-band');
+    if (!brett || !buehne) return;
+    const st = start.style, oben = start.scrollTop || 0;
+    // Klemmbrett ohne laufende Einblend-Animation messen (offsetTop/-Height: ohne Drehung und Verschiebung)
+    const kTop = brett.offsetTop + buehne.offsetTop, kBot = kTop + brett.offsetHeight;
+    for (let i = 0; i < 2; i++) {   // zweiter Durchgang: Band/Blase hängen von --kh ab (quer)
+      st.setProperty('--kh', Math.round(kTop) + 'px');
+      st.setProperty('--kb', Math.round(kBot) + 'px');
+      st.setProperty('--kl', Math.round(r(buehne).left - q.left) + 'px');
+      st.setProperty('--kw', Math.round(r(buehne).width) + 'px');
+      st.setProperty('--mr', Math.round(unten.offsetLeft + unten.offsetWidth + (getComputedStyle(unten).position === 'absolute' ? 0 : buehne.offsetLeft)) + 'px');
+      // Band: Unterkante ohne Animation (offsetTop/-Height statt getBoundingClientRect)
+      if (band) st.setProperty('--bb', Math.round(band.offsetTop + band.offsetHeight) + 'px');
+    }
+  }
+  addEventListener('resize', () => { if (!start.hidden) startLage(); });
+  const startBeob = window.ResizeObserver ? new ResizeObserver(() => { if (!start.hidden) startLage(); }) : null;
+  if (startBeob) startBeob.observe(start);
 
   // ---------- Endbild (Ziel-Schild + Prüfungsprotokoll) ----------
   let nochmalFn = null;
@@ -158,7 +206,7 @@
       </div></div>`;
     ende.prepend(logoEnde);
     endeFigur();
-    ende.querySelector('[data-nochmal]').addEventListener('click', () => { if (d.beispiel) { ende.hidden = true; startbild(startOpts || {}); return; } nochmalFn && nochmalFn(); });
+    ende.querySelector('[data-nochmal]').addEventListener('click', () => { if (d.beispiel) { ende.hidden = true; if (window.BL_UI.startNeu) window.BL_UI.startNeu(); else if (startOpts) startbild(startOpts); return; } nochmalFn && nochmalFn(); });   // „Nochmal“ = immer Startbild (MZ, 30.10.2026)
     ende.hidden = false;
     netz(ende.querySelector('.bl-netz'), d.bereiche);   // erst sichtbar: misst Breite und Beschriftungen
     if (document.fonts && document.fonts.status !== 'loaded') document.fonts.ready.then(netzNeu);
@@ -169,7 +217,9 @@
   function endeFigur() {
     const f = ende.querySelector('.bl-flende');
     if (!f) return;
-    const u = BI.url && (BI.url('fahrlehrer/ende-' + f.dataset.szene) || BI.url('fahrlehrer/szene-' + f.dataset.szene));   // ende-*: ohne Autositz
+    // ende-*: ohne Autositz. szene-* nur, wenn es kein ende-Bild gibt (szene-klemmbrett lädt seit Startbild B früh – nie den Sitz zeigen)
+    const ohneSitz = 'fahrlehrer/ende-' + f.dataset.szene;
+    const u = BI.url && (BI.url(ohneSitz) || (!(BI.VORHANDEN || []).includes(ohneSitz) && BI.url('fahrlehrer/szene-' + f.dataset.szene)));
     // feste Maße aus MASSE (Spielertest 29.10.2026: Abbruch-Text war kurz verdeckt, solange das Bild nachlud)
     const m = BI.mass && (BI.mass('fahrlehrer/ende-' + f.dataset.szene) || {}).px;
     f.innerHTML = u ? `<img src="${u}" alt=""${m ? ` width="${m[0]}" height="${m[1]}"` : ''}>` : '';
@@ -201,7 +251,7 @@
   addEventListener('bl-bild', e => {
     const k = e.detail || '';
     if (!/^fahrlehrer\//.test(k)) return;
-    if (k === 'fahrlehrer/freut') start.querySelectorAll('.bl-figur').forEach(f => { f.innerHTML = fahrlehrerSvg('freut'); });
+    if (k === FIGUR_START && !start.hidden) startFigur();
     if (k === 'fahrlehrer/' + stimmungJetzt) fahrt.querySelector('.bl-figur').innerHTML = fahrlehrerSvg(stimmungJetzt);
     if (/(szene|ende)-/.test(k) && !ende.hidden) endeFigur();
   });
